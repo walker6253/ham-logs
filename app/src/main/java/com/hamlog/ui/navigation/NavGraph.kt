@@ -1,5 +1,7 @@
 ﻿package com.hamlog.ui.navigation
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
@@ -8,8 +10,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -30,24 +32,44 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
 
 val bottomNavItems = listOf(Screen.Main, Screen.Settings)
 
-@OptIn(ExperimentalMaterial3Api::class)
+private const val ANIM_DURATION = 250
+
 @Composable
 fun NavGraph() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
     val showBottomBar = currentRoute in bottomNavItems.map { it.route }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 0.dp,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                ) {
                     bottomNavItems.forEach { screen ->
+                        val selected = currentRoute == screen.route
                         NavigationBarItem(
-                            icon = { Icon(screen.icon, contentDescription = screen.title) },
-                            label = { Text(screen.title) },
-                            selected = currentRoute == screen.route,
+                            icon = {
+                                Icon(
+                                    screen.icon,
+                                    contentDescription = screen.title,
+                                    tint = if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            label = {
+                                Text(
+                                    screen.title,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = if (selected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            selected = selected,
                             onClick = {
                                 if (currentRoute != screen.route) {
                                     navController.navigate(screen.route) {
@@ -56,7 +78,14 @@ fun NavGraph() {
                                         restoreState = true
                                     }
                                 }
-                            }
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
+                                selectedTextColor = MaterialTheme.colorScheme.primary,
+                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                            )
                         )
                     }
                 }
@@ -66,41 +95,55 @@ fun NavGraph() {
         NavHost(
             navController = navController,
             startDestination = Screen.Main.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = {
+                fadeIn(animationSpec = tween(ANIM_DURATION)) +
+                    slideInHorizontally(
+                        animationSpec = tween(ANIM_DURATION),
+                        initialOffsetX = { it / 8 }
+                    )
+            },
+            exitTransition = {
+                fadeOut(animationSpec = tween(ANIM_DURATION)) +
+                    slideOutHorizontally(
+                        animationSpec = tween(ANIM_DURATION),
+                        targetOffsetX = { -it / 8 }
+                    )
+            },
+            popEnterTransition = {
+                fadeIn(animationSpec = tween(ANIM_DURATION)) +
+                    slideInHorizontally(
+                        animationSpec = tween(ANIM_DURATION),
+                        initialOffsetX = { -it / 8 }
+                    )
+            },
+            popExitTransition = {
+                fadeOut(animationSpec = tween(ANIM_DURATION)) +
+                    slideOutHorizontally(
+                        animationSpec = tween(ANIM_DURATION),
+                        targetOffsetX = { it / 8 }
+                    )
+            }
         ) {
             composable(Screen.Main.route) {
-                val mainViewModel: MainViewModel = viewModel()
+                val vm: MainViewModel = viewModel()
                 MainScreen(
-                    viewModel = mainViewModel,
-                    onNavigateToLog = { dateEpochDay ->
-                        navController.navigate("log/$dateEpochDay")
-                    },
-                    onNavigateToSettings = {
-                        navController.navigate(Screen.Settings.route) {
-                            popUpTo(Screen.Main.route) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
+                    vm,
+                    onNavigateToLog = { navController.navigate("log/$it") },
+                    onNavigateToSettings = {}
                 )
             }
-
             composable(
-                route = "log/{dateEpochDay}",
+                "log/{dateEpochDay}",
                 arguments = listOf(navArgument("dateEpochDay") { type = NavType.LongType })
-            ) { backStackEntry ->
-                val dateEpochDay = backStackEntry.arguments?.getLong("dateEpochDay") ?: return@composable
-                val logEntryViewModel: LogEntryViewModel = viewModel()
-                LogEntryScreen(
-                    dateEpochDay = dateEpochDay,
-                    viewModel = logEntryViewModel,
-                    onNavigateBack = { navController.popBackStack() }
-                )
+            ) { entry ->
+                val date = entry.arguments?.getLong("dateEpochDay") ?: return@composable
+                val vm: LogEntryViewModel = viewModel()
+                LogEntryScreen(date, vm, { navController.popBackStack() })
             }
-
             composable(Screen.Settings.route) {
-                val settingsViewModel: SettingsViewModel = viewModel()
-                SettingsScreen(viewModel = settingsViewModel)
+                val vm: SettingsViewModel = viewModel()
+                SettingsScreen(vm)
             }
         }
     }

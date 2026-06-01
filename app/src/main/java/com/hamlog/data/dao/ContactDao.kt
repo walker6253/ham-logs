@@ -15,11 +15,29 @@ interface ContactDao {
     @Query("SELECT COUNT(*) FROM contacts WHERE dateEpochDay = :dateEpochDay")
     fun getContactCountByDate(dateEpochDay: Long): Flow<Int>
 
-    @Query("SELECT DISTINCT dateEpochDay FROM contacts ORDER BY dateEpochDay DESC")
+    @Query("SELECT DISTINCT dateEpochDay FROM contacts WHERE dateEpochDay IS NOT NULL ORDER BY dateEpochDay DESC")
     fun getAllDates(): Flow<List<Long>>
+
+    @Query("SELECT dateEpochDay, COUNT(*) as count FROM contacts GROUP BY dateEpochDay ORDER BY dateEpochDay DESC")
+    fun getAllDatesWithCount(): Flow<List<DateCount>>
 
     @Query("SELECT COUNT(*) FROM contacts")
     fun getTotalCount(): Flow<Int>
+
+    @Query("SELECT DISTINCT callsign FROM contacts WHERE callsign IS NOT NULL ORDER BY callsign ASC")
+    suspend fun getDistinctCallsigns(): List<String>
+
+    @Query("SELECT DISTINCT callsign FROM contacts WHERE callsign LIKE :prefix || '%' ORDER BY callsign ASC LIMIT 8")
+    suspend fun searchCallsigns(prefix: String): List<String>
+
+    @Query("SELECT DISTINCT callsign,frequencyMHz,mode FROM contacts WHERE callsign = :callsign ORDER BY createdAt DESC LIMIT 1")
+    suspend fun getLastContactByCallsign(callsign: String): LastContactInfo?
+
+    @Query("SELECT * FROM contacts WHERE callsign = :callsign ORDER BY createdAt DESC")
+    fun getContactsByCallsign(callsign: String): Flow<List<ContactRecord>>
+
+    @Query("SELECT * FROM contacts WHERE callsign LIKE :prefix || '%' ORDER BY dateEpochDay DESC, createdAt DESC")
+    fun searchContactsByCallsignPrefix(prefix: String): Flow<List<ContactRecord>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(contact: ContactRecord): Long
@@ -30,3 +48,13 @@ interface ContactDao {
     @Update
     suspend fun update(contact: ContactRecord)
 }
+
+data class LastContactInfo(
+    val callsign: String,
+    val frequencyMHz: Double,
+    val mode: String
+)
+data class DateCount(
+    val dateEpochDay: Long,
+    val count: Int
+)

@@ -22,7 +22,7 @@ object SmartInputParser {
         "Q65", "FST4", "FST4W", "FREEDV", "SSTV", "MFSK", "OLIVIA", "CONTESTIA",
         "JS8", "VARAC", "VARA", "ARDOP", "PKT", "TOR"
     )
-    private val rstRegex = Regex("""^[1-5][1-9]{1,2}""")
+    private val rstRegex = Regex("""^[1-5][1-9]$""")
     private val powerRegex = Regex("""^(\d+)\s*(W|KW|w|kw|mW|mw)""")
 
     fun parse(input: String): ParsedFields {
@@ -41,9 +41,21 @@ object SmartInputParser {
         val tokens = input.trim().split(Regex("\\s+"))
         val processedTokens = mutableSetOf<Int>()
 
-        // First pass: detect mode, frequency, power, RST, callsign by pattern
+        // First pass: detect frequency first, then mode, RST, power
         for ((index, token) in tokens.withIndex()) {
             if (token.isBlank()) continue
+
+            // Check frequency first (before RST to avoid 3-digit freq fragments being eaten as RST)
+            if (frequencyMHz.isEmpty() && frequencyRegex.matches(token)) {
+                frequencyMHz = formatFrequency(token)
+                processedTokens.add(index)
+                continue
+            }
+            if (frequencyMHz.isEmpty() && frequencyWithDotRegex.matches(token)) {
+                frequencyMHz = token
+                processedTokens.add(index)
+                continue
+            }
 
             // Check mode keywords
             if (mode.isEmpty() && token.uppercase() in modeKeywords) {
@@ -78,7 +90,7 @@ object SmartInputParser {
             }
         }
 
-        // Second pass: detect callsign and frequency from remaining tokens
+        // Second pass: detect callsign from remaining tokens
         for ((index, token) in tokens.withIndex()) {
             if (index in processedTokens) continue
             if (token.isBlank()) continue
@@ -86,18 +98,7 @@ object SmartInputParser {
             // Check callsign pattern
             if (callsign.isEmpty() && callsignRegex.matches(token.uppercase())) {
                 callsign = token.uppercase()
-                continue
-            }
-
-            // Check frequency (pure digits -> auto format)
-            if (frequencyMHz.isEmpty() && frequencyRegex.matches(token)) {
-                frequencyMHz = formatFrequency(token)
-                continue
-            }
-
-            // Check frequency with dot
-            if (frequencyMHz.isEmpty() && frequencyWithDotRegex.matches(token)) {
-                frequencyMHz = token
+                processedTokens.add(index)
                 continue
             }
         }
@@ -108,6 +109,9 @@ object SmartInputParser {
             if (token.isBlank()) continue
             // Skip if already used as callsign or frequency
             if (token.uppercase() == callsign || token == frequencyMHz) continue
+            // Skip letter-only tokens (partial callsign fragments like "BG", "BG1AB" in progress)
+            if (token.all { it.isLetter() }) continue
+            if (token.first().isLetter() && token.any { it.isDigit() }) continue
             notesParts.add(token)
         }
 
@@ -126,13 +130,14 @@ object SmartInputParser {
     }
 
     private fun formatFrequency(digits: String): String {
+        val num = digits.toLongOrNull() ?: return digits
         return when {
-            digits.length <= 3 -> digits
-            digits.length == 4 -> "."
-            digits.length == 5 -> "."
-            digits.length == 6 -> "."
-            digits.length == 7 -> "."
-            else -> digits
+            num < 1000 -> digits  // Already in MHz (e.g., 50, 145, 435)
+            else -> {
+                // Convert kHz to MHz: e.g., 14270 �� 14.270
+                val dotPos = digits.length - 3
+                digits.substring(0, dotPos) + "." + digits.substring(dotPos)
+            }
         }
     }
 }
