@@ -22,10 +22,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalUriHandler
 import com.hamlog.data.entity.ContactRecord
-import com.hamlog.ui.theme.AlxPrimary
-import com.hamlog.ui.theme.AlxOnSurface
-import com.hamlog.ui.theme.AlxOnSurfaceVariant
-import com.hamlog.ui.theme.AlxOutline
 import com.hamlog.ui.theme.LocalSurfaceContainerLowest
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -118,7 +114,7 @@ fun ContactListItem(
                                 letterSpacing = 0.5.sp,
                                 fontFamily = FontFamily.Serif
                             ),
-                            color = AlxPrimary
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -126,7 +122,7 @@ fun ContactListItem(
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Normal
                             ),
-                            color = AlxOutline,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.clickable {
                                 uriHandler.openUri("https://www.qrz.com/db/${contact.callsign}")
                             }
@@ -139,13 +135,13 @@ fun ContactListItem(
                             Icons.Default.AccessTime,
                             contentDescription = null,
                             modifier = Modifier.size(11.dp),
-                            tint = AlxOutline.copy(alpha = 0.7f)
+                            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
                             timeString,
                             style = MaterialTheme.typography.labelSmall,
-                            color = AlxOutline.copy(alpha = 0.7f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                         if (contact.mode.isNotBlank()) {
                             Spacer(modifier = Modifier.width(10.dp))
@@ -187,14 +183,14 @@ fun ContactListItem(
                                 Text(
                                     "频率 ",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = AlxOutline
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Text(
                                     "${contact.frequencyMHz} MHz",
                                     style = MaterialTheme.typography.bodyMedium.copy(
                                         fontWeight = FontWeight.Bold
                                     ),
-                                    color = AlxOnSurface
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Spacer(Modifier.weight(1f))
@@ -206,10 +202,10 @@ fun ContactListItem(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (contact.rstSent.isNotBlank()) {
-                                InlineDetail("Set", contact.rstSent)
+                                InlineDetail("信号发", contact.rstSent)
                             }
                             if (contact.rstReceived.isNotBlank()) {
-                                InlineDetail("Rcv", contact.rstReceived)
+                                InlineDetail("信号收", contact.rstReceived)
                             }
                             if (contact.powerTx.isNotBlank()) {
                                 InlineDetail("PS", contact.powerTx)
@@ -227,7 +223,7 @@ fun ContactListItem(
                     Text(
                         contact.notes,
                         style = MaterialTheme.typography.bodySmall,
-                        color = AlxOutline.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -245,14 +241,14 @@ private fun InlineDetail(label: String, value: String) {
         Text(
             "$label ",
             style = MaterialTheme.typography.labelSmall,
-            color = AlxOutline
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             value,
             style = MaterialTheme.typography.bodySmall.copy(
                 fontWeight = FontWeight.Medium
             ),
-            color = AlxOnSurface
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }

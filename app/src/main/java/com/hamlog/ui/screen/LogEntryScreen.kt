@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,6 +39,7 @@ import androidx.compose.material3.rememberTimePickerState
 import java.util.TimeZone
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
+import com.hamlog.util.CallSignUtils
 import com.hamlog.ui.theme.NotoSerif
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,6 +95,8 @@ fun LogEntryScreen(
         var editMode by remember(contact.id) { mutableStateOf(contact.mode) }
         var editRstSent by remember(contact.id) { mutableStateOf(contact.rstSent) }
         var editRstRecv by remember(contact.id) { mutableStateOf(contact.rstReceived) }
+        var editPowerTx by remember(contact.id) { mutableStateOf(contact.powerTx) }
+        var editPowerRx by remember(contact.id) { mutableStateOf(contact.powerRx) }
         var editNotes by remember(contact.id) { mutableStateOf(contact.notes) }
         var editDateEpochDay by remember(contact.id) { mutableStateOf(contact.dateEpochDay) }
         var editCreatedAt by remember(contact.id) { mutableStateOf(contact.createdAt) }
@@ -128,19 +132,19 @@ fun LogEntryScreen(
     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)).clickable(onClick = { editingContact = null }), contentAlignment = Alignment.Center) {
         Surface(modifier = Modifier.widthIn(max = 448.dp).padding(16.dp), shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.surfaceContainerLowest, shadowElevation = 24.dp) {
             Column {
-                Column(modifier = Modifier.padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 24.dp)) {
-                    Text("编辑通联", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
+                Column(modifier = Modifier.padding(start = 22.dp, end = 22.dp, top = 22.dp, bottom = 14.dp)) {
+                    Text("编辑通联", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onBackground)
                     Text("QSO Editor", style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Column(modifier = Modifier.padding(start = 32.dp, end = 32.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                Column(modifier = Modifier.padding(start = 22.dp, end = 22.dp, bottom = 22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("日期", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = Color(0xFF4CAF50))
-                            OutlinedTextField(editDateStr, {}, Modifier.fillMaxWidth(), readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodyMedium, shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = Color.Transparent, disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow), trailingIcon = { IconButton(onClick = { showEditDatePicker = true }) { Text("\uD83D\uDCC5", style = MaterialTheme.typography.bodySmall) } })
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("日期", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.primary)
+                            OutlinedTextField(editDateStr, {}, Modifier.fillMaxWidth(), readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodySmall, shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = Color.Transparent, disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow), trailingIcon = { IconButton(onClick = { showEditDatePicker = true }) { Text("\uD83D\uDCC5", style = MaterialTheme.typography.bodySmall) } })
                         }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("时间", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
-                            OutlinedTextField(editTimeLabel, {}, Modifier.fillMaxWidth(), readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = Color.Transparent, disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow), trailingIcon = { IconButton(onClick = { showEditTimePicker = true }) { Text("\uD83D\uDD50", style = MaterialTheme.typography.bodySmall) } })
+                            OutlinedTextField(editTimeLabel, {}, Modifier.fillMaxWidth(), readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = Color.Transparent, disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow), trailingIcon = { IconButton(onClick = { showEditTimePicker = true }) { Text("\uD83D\uDD50", style = MaterialTheme.typography.bodySmall) } })
                         }
                     }
 
@@ -151,17 +155,17 @@ fun LogEntryScreen(
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("呼号", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
-                        OutlinedTextField(editCallsign, { editCallsign = it.uppercase() }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = (-1).sp), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                        OutlinedTextField(editCallsign, { editCallsign = it.uppercase() }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.titleLarge.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow), trailingIcon = { val p = CallSignUtils.getProvince(editCallsign); if (p != null) Text(p, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)) })
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("频率 MHz", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
-                            OutlinedTextField(editFreq, { editFreq = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                            OutlinedTextField(editFreq, { editFreq = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
-                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text("模式", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
                             ExposedDropdownMenuBox(expanded = modeExpanded, onExpandedChange = { modeExpanded = it }, modifier = Modifier.fillMaxWidth()) {
-                                OutlinedTextField(value = editMode, onValueChange = {}, readOnly = true, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modeExpanded) }, colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(), modifier = Modifier.menuAnchor().fillMaxWidth())
+                                OutlinedTextField(value = editMode, onValueChange = {}, readOnly = true, singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modeExpanded) }, colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(), modifier = Modifier.menuAnchor().fillMaxWidth())
                                 ExposedDropdownMenu(expanded = modeExpanded, onDismissRequest = { modeExpanded = false }) { modeOptions.forEach { opt -> DropdownMenuItem(text = { Text(opt, fontFamily = NotoSerif) }, onClick = { editMode = opt; modeExpanded = false }) } }
                             }
                         }
@@ -169,22 +173,32 @@ fun LogEntryScreen(
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text("信号报告-发", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
-                            OutlinedTextField(editRstSent, { editRstSent = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                            OutlinedTextField(editRstSent, { editRstSent = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text("信号报告-收", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
-                            OutlinedTextField(editRstRecv, { editRstRecv = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                            OutlinedTextField(editRstRecv, { editRstRecv = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                        }
+                    }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("我的功率", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            OutlinedTextField(editPowerTx, { editPowerTx = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                        }
+                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text("对方功率", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            OutlinedTextField(editPowerRx, { editPowerRx = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                     }
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("备注", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
-                        OutlinedTextField(editNotes, { editNotes = it }, Modifier.fillMaxWidth(), maxLines = 3, textStyle = MaterialTheme.typography.bodyMedium, shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+                        OutlinedTextField(editNotes, { editNotes = it }, Modifier.fillMaxWidth(), maxLines = 3, textStyle = MaterialTheme.typography.bodySmall, shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                     }
 
-                    Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { editingContact = null }) { Text("取消", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Spacer(Modifier.width(16.dp))
-                        Button(onClick = { viewModel.updateContact(contact.copy(dateEpochDay = editDateEpochDay, createdAt = editCreatedAt, callsign = editCallsign.trim(), frequencyMHz = editFreq.toDoubleOrNull() ?: contact.frequencyMHz, mode = editMode.trim(), rstSent = editRstSent.trim(), rstReceived = editRstRecv.trim(), notes = editNotes.trim())); editingContact = null }, shape = RoundedCornerShape(50), elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)) { Text("保存", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onPrimary) }
+                        Button(onClick = { viewModel.updateContact(contact.copy(dateEpochDay = editDateEpochDay, createdAt = editCreatedAt, callsign = editCallsign.trim(), frequencyMHz = editFreq.toDoubleOrNull() ?: contact.frequencyMHz, mode = editMode.trim(), rstSent = editRstSent.trim(), rstReceived = editRstRecv.trim(), powerTx = editPowerTx.trim(), powerRx = editPowerRx.trim(), notes = editNotes.trim())); editingContact = null }, shape = RoundedCornerShape(50), elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)) { Text("保存", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onPrimary) }
                     }
                 }
             }
@@ -272,7 +286,26 @@ fun LogEntryScreen(
                                 )
                                 SwipeToDismissBox(
                                     state = dismissState,
-                                    backgroundContent = {},
+                                    backgroundContent = {
+                                    Row(
+                                        Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "删除",
+                                            tint = Color(0xFFFF4444),
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                        Icon(
+                                            Icons.Default.Delete,
+                                            contentDescription = "删除",
+                                            tint = Color(0xFFFF4444),
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+                                },
                                     enableDismissFromStartToEnd = true,
                                     enableDismissFromEndToStart = true
                                 ) {
@@ -292,11 +325,11 @@ fun LogEntryScreen(
             enter = fadeIn(tween(200)) + slideInVertically(tween(300)) { -it },
             exit = fadeOut(tween(300)) + slideOutVertically(tween(300)) { -it }
         ) {
-            Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFF4CAF50).copy(alpha = 0.12f), tonalElevation = 0.dp) {
+            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), tonalElevation = 0.dp) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("\u2713", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.width(8.dp))
-                    Text("保存成功", style = MaterialTheme.typography.labelLarge, color = Color(0xFF2E7D32))
+                    Text("保存成功", style = MaterialTheme.typography.labelLarge, color = Color(0xFF00E50B))
                 }
             }
         }

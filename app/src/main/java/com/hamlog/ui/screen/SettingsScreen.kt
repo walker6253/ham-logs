@@ -7,13 +7,21 @@ import android.Manifest
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.GridOn
@@ -29,14 +37,18 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
 import com.hamlog.ui.theme.NotoSerif
 import com.hamlog.AppPreferences
 import com.hamlog.util.GridCalculator
+import com.hamlog.util.EquipmentManager
+import com.hamlog.R
 import com.hamlog.viewmodel.SettingsViewModel
 import androidx.core.content.ContextCompat
 import java.time.ZoneId
@@ -92,6 +104,14 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         "America/Los_Angeles" to "UTC-8 \u6d1b\u6749\u77f6"
     )
     var tzExpanded by remember { mutableStateOf(false) }
+    var showAntennaAdd by remember { mutableStateOf(false) }
+    var showRigAdd by remember { mutableStateOf(false) }
+    var newAntennaText by remember { mutableStateOf("") }
+    var newRigModelText by remember { mutableStateOf("") }
+    var newRigBrandText by remember { mutableStateOf("") }
+    val antennaList = remember { mutableStateListOf<String>().apply { addAll(EquipmentManager.getAntennas()) } }
+    val rigList = remember { mutableStateListOf<EquipmentManager.EquipmentCategory>().apply { addAll(EquipmentManager.getRigs()) } }
+    fun refreshEquipment() { antennaList.clear(); antennaList.addAll(EquipmentManager.getAntennas()); rigList.clear(); rigList.addAll(EquipmentManager.getRigs()) }
 
     val adifPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -141,6 +161,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         )
     }
 
+    if (showAntennaAdd) AlertDialog(onDismissRequest={showAntennaAdd=false},shape=MaterialTheme.shapes.large,containerColor=MaterialTheme.colorScheme.surface,title={Text("添加天馈",fontWeight=FontWeight.SemiBold)},text={OutlinedTextField(value=newAntennaText,onValueChange={newAntennaText=it},modifier=Modifier.fillMaxWidth(),singleLine=true,textStyle=MaterialTheme.typography.bodySmall,shape=RoundedCornerShape(8.dp))},confirmButton={TextButton(onClick={EquipmentManager.addAntenna(newAntennaText);refreshEquipment();newAntennaText="";showAntennaAdd=false}){Text("确定")}},dismissButton={TextButton(onClick={showAntennaAdd=false;newAntennaText=""}){Text("取消")}})
+    if (showRigAdd) AlertDialog(onDismissRequest={showRigAdd=false},shape=MaterialTheme.shapes.large,containerColor=MaterialTheme.colorScheme.surface,title={Text("添加设备",fontWeight=FontWeight.SemiBold)},text={Column(verticalArrangement=Arrangement.spacedBy(8.dp)){OutlinedTextField(value=newRigBrandText,onValueChange={newRigBrandText=it},modifier=Modifier.fillMaxWidth(),singleLine=true,label={Text("品牌")},textStyle=MaterialTheme.typography.bodySmall,shape=RoundedCornerShape(8.dp));OutlinedTextField(value=newRigModelText,onValueChange={newRigModelText=it},modifier=Modifier.fillMaxWidth(),singleLine=true,label={Text("型号")},textStyle=MaterialTheme.typography.bodySmall,shape=RoundedCornerShape(8.dp))}},confirmButton={TextButton(onClick={val b=newRigBrandText.trim();val m=newRigModelText.trim();if(b.isNotBlank()){EquipmentManager.addRigBrand(b);if(m.isNotBlank())EquipmentManager.addRigModel(b,m)};refreshEquipment();newRigBrandText="";newRigModelText="";showRigAdd=false}){Text("确定")}},dismissButton={TextButton(onClick={showRigAdd=false;newRigBrandText="";newRigModelText=""}){Text("取消")}})
+
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -174,7 +197,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Person, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u6211\u7684\u547c\u53f7", style = MaterialTheme.typography.titleSmall)
+                            Text("\u547c\u53f7", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(
@@ -202,7 +225,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Badge, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("OP\u59d3\u540d", style = MaterialTheme.typography.titleSmall)
+                            Text("\u59d3\u540d", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -330,6 +353,28 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     }
                 }
 
+                // Equipment Maintenance
+                @OptIn(ExperimentalLayoutApi::class)
+                SettingsCard {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Build,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(8.dp));Text("设备维护",style=MaterialTheme.typography.titleSmall) }
+                        Spacer(Modifier.height(8.dp))
+                        Text("天馈",style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                            antennaList.forEach { item -> Surface(shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.surfaceVariant,modifier=Modifier.clickable{EquipmentManager.removeAntenna(item);refreshEquipment()}){Row(Modifier.padding(start=8.dp,end=6.dp,top=4.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){Text(item,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.width(4.dp));Icon(Icons.Default.Close,null,Modifier.size(10.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f))}} }
+                            }
+                        Spacer(Modifier.height(4.dp))
+                        Surface(onClick={showAntennaAdd=true},modifier=Modifier.fillMaxWidth(),shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f)){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
+                        Spacer(Modifier.height(12.dp))
+                        Text("设备",style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        rigList.forEach { cat -> Column(Modifier.padding(bottom=8.dp)){Text(cat.brand,style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Medium,color=MaterialTheme.colorScheme.onSurface);Spacer(Modifier.height(4.dp));FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){cat.models.forEach{model->Surface(shape=MaterialTheme.shapes.extraSmall,color=MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.6f),modifier=Modifier.clickable{EquipmentManager.removeRigModel(cat.brand,model);refreshEquipment()}){Row(Modifier.padding(start=6.dp,end=6.dp,top=3.dp,bottom=3.dp),verticalAlignment=Alignment.CenterVertically){Text(model,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.width(3.dp));Icon(Icons.Default.Close,null,Modifier.size(9.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))}}}}} }
+                        Spacer(Modifier.height(4.dp))
+                        Surface(onClick={showRigAdd=true},shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f),modifier=Modifier.fillMaxWidth()){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加设备",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
+                    }
+                }
+
                 // Stats
                 SettingsCard {
                     Row(Modifier.fillMaxWidth().padding(16.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
@@ -381,16 +426,25 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 Spacer(Modifier.height(4.dp))
 
                 // Footer
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.medium,
-                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                val uriHandler = LocalUriHandler.current
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        "\u901a\u8054\u65e5\u5fd7 v1.0 \u00b7 \u4e1a\u4f59\u65e0\u7ebf\u7535\u901a\u8054\u65e5\u5fd7",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(14.dp)
+                        "Designed by BI9BRH",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_github),
+                        contentDescription = "GitHub",
+                        modifier = Modifier.size(14.dp).clickable {
+                            uriHandler.openUri("https://github.com/walker6253/ham-logs")
+                        },
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
 

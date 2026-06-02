@@ -38,6 +38,8 @@ import com.hamlog.ui.theme.LocalSurfaceContainerLow
 import com.hamlog.ui.theme.LocalSurfaceContainerLowest
 import com.hamlog.ui.theme.NotoSerif
 import com.hamlog.util.BandUtil
+import com.hamlog.util.CallSignUtils
+import com.hamlog.util.EquipmentManager
 
 private val rstOptions = listOf(
     "59","58","57","56","55","54","53","52","51",
@@ -122,7 +124,7 @@ fun SmartInputField(
         Box {
             OutlinedTextField(
                 value = smartInput,
-                onValueChange = onInputChange,
+                onValueChange = { onInputChange(it.uppercase()) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { if (!it.isFocused) onDismissSuggestions() },
@@ -134,17 +136,28 @@ fun SmartInputField(
                     )
                 },
                 trailingIcon = {
-                    if (smartInput.isNotBlank()) {
-                        IconButton(
-                            onClick = onCommitNext,
-                            modifier = Modifier.size(40.dp)
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.KeyboardReturn,
-                                contentDescription = "确认",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val province = CallSignUtils.getProvince(smartInput.split(" ").firstOrNull() ?: "")
+                        if (province != null) {
+                            Text(
+                                province,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.padding(end = 4.dp)
                             )
+                        }
+                        if (smartInput.isNotBlank()) {
+                            IconButton(
+                                onClick = onCommitNext,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.KeyboardReturn,
+                                    contentDescription = "确认",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 },
@@ -206,8 +219,8 @@ fun SmartInputField(
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AlxLabel("RST发")
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AlxLabel("我的信号报告")
                 Surface(
                     modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showSentKb = false }.clickable { if (showSentKb) showSentKb = false else { showSentKb = true; showRecvKb = false; showPtxKb = false; showPrxKb = false } },
                     shape = MaterialTheme.shapes.small,
@@ -228,11 +241,11 @@ fun SmartInputField(
                     selected = rstSent,
                     containerHigh = surfaceContainerHigh,
                     onSelect = { onFieldChange("rstSent", it); showSentKb = false },
-                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFF9A825)
+                    gradientStart = Color(0xFF01D00D), gradientEnd = Color(0xFFF9A825)
                 )
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AlxLabel("RST收")
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AlxLabel("对方信号报告")
                 Surface(
                     modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showRecvKb = false }.clickable { if (showRecvKb) showRecvKb = false else { showRecvKb = true; showSentKb = false; showPtxKb = false; showPrxKb = false } },
                     shape = MaterialTheme.shapes.small,
@@ -253,15 +266,15 @@ fun SmartInputField(
                     selected = rstReceived,
                     containerHigh = surfaceContainerHigh,
                     onSelect = { onFieldChange("rstReceived", it); showRecvKb = false },
-                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFF9A825)
+                    gradientStart = Color(0xFF01D00D), gradientEnd = Color(0xFFF9A825)
                 )
             }
         }
 
-        // ── 发射功率 + 接收功率 ───────────────────────────────────────────────
+        // ── 我的功率 + 对方功率 ───────────────────────────────────────────────
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AlxLabel("发射功率 (W)")
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AlxLabel("我的功率 (W)")
                 Surface(
                     modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showPtxKb = false }.clickable { if (showPtxKb) showPtxKb = false else { showPtxKb = true; showPrxKb = false; showSentKb = false; showRecvKb = false } },
                     shape = MaterialTheme.shapes.small,
@@ -282,11 +295,11 @@ fun SmartInputField(
                     selected = powerTx.replace("W", ""),
                     containerHigh = surfaceContainerHigh,
                     onSelect = { onFieldChange("powerTx", it + "W"); showPtxKb = false },
-                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFC62828)
+                    gradientStart = Color(0xFF01D00D), gradientEnd = Color(0xFFC62828)
                 )
             }
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                AlxLabel("接收功率 (W)")
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                AlxLabel("对方功率 (W)")
                 Surface(
                     modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showPrxKb = false }.clickable { if (showPrxKb) showPrxKb = false else { showPrxKb = true; showPtxKb = false; showSentKb = false; showRecvKb = false } },
                     shape = MaterialTheme.shapes.small,
@@ -307,7 +320,7 @@ fun SmartInputField(
                     selected = powerRx.replace("W", ""),
                     containerHigh = surfaceContainerHigh,
                     onSelect = { onFieldChange("powerRx", it + "W"); showPrxKb = false },
-                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFC62828)
+                    gradientStart = Color(0xFF01D00D), gradientEnd = Color(0xFFC62828)
                 )
             }
         }
@@ -503,12 +516,7 @@ private fun NotesChips(
 ) {
     val selectedAntenna = remember { mutableStateOf("") }
     val selectedRig     = remember { mutableStateOf("") }
-    val equipmentCategories = listOf(
-        "ICOM"  to listOf("IC-7300","IC-705","IC-9700","IC-7610","IC-9100"),
-        "八重洲" to listOf("FT-891","FT-710","FT-818","FT-991","FTdx10","FT-857","FT-817"),
-        "协谷"  to listOf("G90","X6100","X5105","X108G"),
-        "其他"  to listOf("KX3","DX-10","QRP Labs","uSDX")
-    )
+    val equipmentCategories = EquipmentManager.getRigs().map { it.brand to it.models }
 
     @Composable
     fun noteChip(tag: String, isSelected: Boolean, onClick: () -> Unit) {
@@ -528,39 +536,48 @@ private fun NotesChips(
         }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("天馈：", style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.width(36.dp))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement   = Arrangement.spacedBy(4.dp)) {
-                listOf("GP天线","八木","倒V","正V","长线","DP","端馈","天调","磁环").forEach { tag ->
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column {
+            Text("天馈", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(4.dp))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                EquipmentManager.getAntennas().forEach { tag ->
                     noteChip(tag, tag == selectedAntenna.value) {
-                        selectedAntenna.value = tag
                         var r = currentNotes
-                        listOf("GP天线","八木","倒V","正V","长线","DP","端馈","天调","磁环")
-                            .forEach { r = r.replace(it, "") }
+                        EquipmentManager.getAntennas().forEach { r = r.replace(it, "") }
                         r = r.replace("  "," ").replace(" ,",",").replace(", ,",",").trim().trim(',').trim()
-                        onNotesChange(if (r.isBlank()) tag else "$r, $tag")
+                        if (tag == selectedAntenna.value) {
+                            selectedAntenna.value = ""
+                            onNotesChange(r)
+                        } else {
+                            selectedAntenna.value = tag
+                            onNotesChange(if (r.isBlank()) tag else r + ", " + tag)
+                        }
                     }
                 }
             }
         }
-        equipmentCategories.forEach { (cat, models) ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("$cat：", style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(36.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalArrangement   = Arrangement.spacedBy(4.dp)) {
-                    models.forEach { model ->
-                        noteChip(model, model == selectedRig.value) {
-                            selectedRig.value = model
-                            var r = currentNotes
-                            equipmentCategories.forEach { (_,all) -> all.forEach { r = r.replace(it,"") } }
-                            r = r.replace("  "," ").replace(" ,",",").replace(", ,",",").trim().trim(',').trim()
-                            onNotesChange(if (r.isBlank()) model else "$r, $model")
+        Column {
+            Text("设备", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(4.dp))
+            equipmentCategories.forEach { (cat, models) ->
+                Column {
+                    Text(cat, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                    Spacer(Modifier.height(2.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        models.forEach { model ->
+                            noteChip(model, model == selectedRig.value) {
+                                var r = currentNotes
+                                equipmentCategories.forEach { (_, all) -> all.forEach { r = r.replace(it, "") } }
+                                r = r.replace("  "," ").replace(" ,",",").replace(", ,",",").trim().trim(',').trim()
+                                if (model == selectedRig.value) {
+                                    selectedRig.value = ""
+                                    onNotesChange(r)
+                                } else {
+                                    selectedRig.value = model
+                                    onNotesChange(if (r.isBlank()) model else r + ", " + model)
+                                }
+                            }
                         }
                     }
                 }

@@ -45,8 +45,8 @@ fun RstKeyboard(
                 modifier = Modifier.padding(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                RstKeyRow((1..5).toList(), 5) { appendDigit(value, onValueChange, it) }
-                RstKeyRow((6..9).toList(), 4) { appendDigit(value, onValueChange, it) }
+                RstKeyRow((1..5).toList(), 0, 9) { appendDigit(value, onValueChange, it) }
+                RstKeyRow((6..9).toList() + 0, 5, 9) { appendDigit(value, onValueChange, it) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedButton(
                         onClick = { onValueChange("") },
@@ -84,21 +84,25 @@ private fun appendDigit(value: String, onChange: (String) -> Unit, digit: String
 }
 
 @Composable
-private fun RstKeyRow(digits: List<Int>, total: Int, onDigit: (String) -> Unit) {
+private fun RstKeyRow(digits: List<Int>, startIndex: Int, globalTotal: Int, onDigit: (String) -> Unit) {
     val red = Color(0xFFE53935)
     val green = Color(0xFF43A047)
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
         digits.forEachIndexed { i, d ->
-            val fraction = if (total > 1) i.toFloat() / (total - 1) else 0f
-            val keyColor = lerp(red, green, fraction)
+            val globalIdx = startIndex + i
+            // 0 has no color (neutral)
+            val isZero = (d == 0)
+            val keyColor = if (isZero) MaterialTheme.colorScheme.onSurfaceVariant
+            else if (globalTotal > 1) lerp(red, green, globalIdx.toFloat() / (globalTotal - 1))
+            else red
             Surface(
                 onClick = { onDigit(d.toString()) },
                 shape = RoundedCornerShape(6.dp),
-                color = keyColor.copy(alpha = 0.18f),
+                color = if (isZero) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f) else keyColor.copy(alpha = 0.18f),
                 modifier = Modifier.weight(1f).height(36.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(d.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.SemiBold), color = keyColor)
+                    Text(d.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.SemiBold), color = if (isZero) MaterialTheme.colorScheme.onSurfaceVariant else keyColor)
                 }
             }
         }

@@ -217,6 +217,15 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
             else callsign
         }
         _uiState.value = s.copy(callsign = callsign, showSuggestions = false, smartInput = newSmartInput)
+        // Also refresh history for the selected callsign
+        historyJob?.cancel()
+        historyJob = viewModelScope.launch {
+            try {
+                repository.searchContactsByCallsignPrefix(callsign).catch {}.collect {
+                    _uiState.value = _uiState.value.copy(historicalContacts = it.ifEmpty { null })
+                }
+            } catch (_: Exception) {}
+        }
         viewModelScope.launch {
             try {
                 val last = repository.getLastContactByCallsign(callsign) ?: return@launch
