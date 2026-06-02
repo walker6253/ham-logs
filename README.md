@@ -35,4 +35,4 @@ Designed by [BI9BRH](https://github.com/walker6253)
 
 ## 协议
 
-[MIT License](LICENSE)
+[Apache 2.0 License](LICENSE)
