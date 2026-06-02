@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.theme
+package com.hamlog.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -8,10 +8,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.hamlog.R
 
 // ── Alexandria Design System ──────────────────────────────────────────────────
 // Colours sourced 1-to-1 from the HTML Tailwind config
@@ -60,6 +62,17 @@ val AlxError              = Color(0xFFBA1A1A)
 val AlxOnError            = Color(0xFFFFFFFF)
 val AlxErrorContainer     = Color(0xFFFFDAD6)
 val AlxOnErrorContainer   = Color(0xFF93000A)
+
+// Font families
+val NotoSerif = FontFamily(
+    Font(R.font.noto_serif, FontWeight.Normal),
+    Font(R.font.noto_serif, FontWeight.Bold)
+)
+val SpaceGrotesk = FontFamily(
+    Font(R.font.space_grotesk, FontWeight.Normal),
+    Font(R.font.space_grotesk, FontWeight.Medium),
+    Font(R.font.space_grotesk, FontWeight.Bold)
+)
 
 // Dark surface tokens
 val SurfaceDark  = Color(0xFF0B0D0F)
@@ -121,17 +134,17 @@ val LocalSurfaceContainerLowest = staticCompositionLocalOf { AlxSurfaceContainer
 // headline → Noto Serif feel via Serif; body → default (Inter-like system sans);
 // label → slightly tighter tracking (Public Sans feel via system sans)
 private val AppTypography = Typography(
-    headlineLarge  = TextStyle(fontFamily = FontFamily.Serif,   fontWeight = FontWeight.Bold,     fontSize = 20.sp, lineHeight = 26.sp,  letterSpacing = (-0.5).sp),
-    headlineSmall  = TextStyle(fontFamily = FontFamily.Serif,   fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 24.sp),
-    titleLarge     = TextStyle(fontFamily = FontFamily.Serif,   fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
-    titleMedium    = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp,  letterSpacing = 0.1.sp),
-    titleSmall     = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp,  letterSpacing = 0.1.sp),
-    bodyLarge      = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 13.sp, lineHeight = 19.sp,  letterSpacing = 0.25.sp),
-    bodyMedium     = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 12.sp, lineHeight = 16.sp,  letterSpacing = 0.25.sp),
-    bodySmall      = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Normal,   fontSize = 11.sp, lineHeight = 14.sp,  letterSpacing = 0.4.sp),
-    labelLarge     = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium,   fontSize = 11.sp, lineHeight = 15.sp,  letterSpacing = 0.1.sp),
-    labelMedium    = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium,   fontSize = 10.sp, lineHeight = 13.sp,  letterSpacing = 0.5.sp),
-    labelSmall     = TextStyle(fontFamily = FontFamily.Default, fontWeight = FontWeight.Medium,   fontSize = 9.sp,  lineHeight = 11.sp,  letterSpacing = 0.8.sp)
+    headlineLarge  = TextStyle(fontFamily = NotoSerif,   fontWeight = FontWeight.Bold,     fontSize = 20.sp, lineHeight = 26.sp,  letterSpacing = (-0.5).sp),
+    headlineSmall  = TextStyle(fontFamily = NotoSerif,   fontWeight = FontWeight.SemiBold, fontSize = 18.sp, lineHeight = 24.sp),
+    titleLarge     = TextStyle(fontFamily = NotoSerif,   fontWeight = FontWeight.SemiBold, fontSize = 16.sp, lineHeight = 22.sp),
+    titleMedium    = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 14.sp, lineHeight = 20.sp,  letterSpacing = 0.1.sp),
+    titleSmall     = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.SemiBold, fontSize = 12.sp, lineHeight = 16.sp,  letterSpacing = 0.1.sp),
+    bodyLarge      = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Normal,   fontSize = 13.sp, lineHeight = 19.sp,  letterSpacing = 0.25.sp),
+    bodyMedium     = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Normal,   fontSize = 12.sp, lineHeight = 16.sp,  letterSpacing = 0.25.sp),
+    bodySmall      = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Normal,   fontSize = 11.sp, lineHeight = 14.sp,  letterSpacing = 0.4.sp),
+    labelLarge     = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium,   fontSize = 11.sp, lineHeight = 15.sp,  letterSpacing = 0.1.sp),
+    labelMedium    = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium,   fontSize = 10.sp, lineHeight = 13.sp,  letterSpacing = 0.5.sp),
+    labelSmall     = TextStyle(fontFamily = SpaceGrotesk, fontWeight = FontWeight.Medium,   fontSize = 9.sp,  lineHeight = 11.sp,  letterSpacing = 0.8.sp)
 )
 
 // ── Shapes ─────────────────────────────────────────────────────────────────────

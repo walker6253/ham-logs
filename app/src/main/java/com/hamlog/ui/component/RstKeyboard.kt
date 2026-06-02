@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hamlog.ui.theme.AlxPrimary
+import com.hamlog.ui.theme.NotoSerif
 
 @Composable
 fun RstKeyboard(
@@ -97,7 +98,7 @@ private fun RstKeyRow(digits: List<Int>, total: Int, onDigit: (String) -> Unit) 
                 modifier = Modifier.weight(1f).height(36.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(d.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold), color = keyColor)
+                    Text(d.toString(), style = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.SemiBold), color = keyColor)
                 }
             }
         }

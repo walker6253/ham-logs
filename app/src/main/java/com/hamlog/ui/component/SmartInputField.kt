@@ -36,6 +36,7 @@ import com.hamlog.ui.theme.LocalSurfaceContainer
 import com.hamlog.ui.theme.LocalSurfaceContainerHigh
 import com.hamlog.ui.theme.LocalSurfaceContainerLow
 import com.hamlog.ui.theme.LocalSurfaceContainerLowest
+import com.hamlog.ui.theme.NotoSerif
 import com.hamlog.util.BandUtil
 
 private val rstOptions = listOf(
@@ -187,7 +188,7 @@ fun SmartInputField(
                 },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    fontFamily = FontFamily.Default,
+                    fontFamily = NotoSerif,
                     color = MaterialTheme.colorScheme.onSurface
                 ),
                 keyboardOptions = KeyboardOptions(
@@ -223,7 +224,7 @@ fun SmartInputField(
                         ) {
                             Text(s,
                                 style = MaterialTheme.typography.bodyMedium,
-                                fontFamily = FontFamily.Monospace,
+                                fontFamily = NotoSerif,
                                 color = MaterialTheme.colorScheme.primary)
                         }
                     }
@@ -520,7 +521,7 @@ private fun QuickChipRow(
                     Text(
                         v,
                         style = MaterialTheme.typography.labelSmall,
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = NotoSerif,
                         fontWeight = if (isSel) FontWeight.SemiBold else FontWeight.Normal,
                         color = fg
                     )

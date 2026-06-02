@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.hamlog.ui.theme.AlxPrimary
+import com.hamlog.ui.theme.NotoSerif
 
 /**
  * Custom power keyboard.
@@ -59,7 +60,7 @@ AnimatedVisibility(
                         modifier = Modifier.weight(1f).height(36.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text("0", style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
+                            Text("0", style = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     OutlinedButton(
@@ -109,7 +110,7 @@ private fun PowerKeyRow(digits: List<String>, onDigit: (String) -> Unit) {
                 modifier = Modifier.weight(1f).height(36.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(d, style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
+                    Text(d, style = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.SemiBold), color = MaterialTheme.colorScheme.onSurface)
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.hamlog.ui.component
 
+import com.hamlog.ui.theme.NotoSerif
+
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -75,7 +77,7 @@ fun IndependentFields(
                 label = { Text("呼号") },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = NotoSerif,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
                 ),
@@ -108,7 +110,7 @@ fun IndependentFields(
                                 Text(
                                     s,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontFamily = FontFamily.Monospace,
+                                    fontFamily = NotoSerif,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -128,7 +130,7 @@ fun IndependentFields(
                 label = { Text("频率 MHz") },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = FontFamily.Monospace
+                    fontFamily = NotoSerif
                 ),
                 shape = MaterialTheme.shapes.small,
                 colors = hamFieldColors()
@@ -141,7 +143,7 @@ fun IndependentFields(
                 label = { Text("模式") },
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(
-                    fontFamily = FontFamily.Monospace
+                    fontFamily = NotoSerif
                 ),
                 shape = MaterialTheme.shapes.small,
                 colors = hamFieldColors()
@@ -170,7 +172,7 @@ fun IndependentFields(
                     modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) showSentKb = false }.clickable { if (showSentKb) showSentKb = false else { showSentKb = true; showRecvKb = false; showPtxKb = false; showPrxKb = false } },
                     label = { Text("信号报告-发") },
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif),
                     shape = MaterialTheme.shapes.small,
                     colors = hamFieldColors()
                 )
@@ -188,7 +190,7 @@ fun IndependentFields(
                         val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFF9A825), fraction)
                         SuggestionChip(
                             onClick = { onFieldChange("rstSent", v); showSentKb = false },
-                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
+                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
@@ -209,7 +211,7 @@ fun IndependentFields(
                     modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) showRecvKb = false }.clickable { if (showRecvKb) showRecvKb = false else { showRecvKb = true; showSentKb = false; showPtxKb = false; showPrxKb = false } },
                     label = { Text("信号报告-收") },
                     singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = NotoSerif),
                     shape = MaterialTheme.shapes.small,
                     colors = hamFieldColors()
                 )
@@ -227,7 +229,7 @@ fun IndependentFields(
                         val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFF9A825), fraction)
                         SuggestionChip(
                             onClick = { onFieldChange("rstReceived", v); showRecvKb = false },
-                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
+                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
@@ -253,7 +255,7 @@ fun IndependentFields(
                         val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFC62828), fraction)
                         SuggestionChip(
                             onClick = { onFieldChange("powerTx", v + "W"); showPtxKb = false },
-                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
+                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
@@ -275,7 +277,7 @@ fun IndependentFields(
                         val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFC62828), fraction)
                         SuggestionChip(
                             onClick = { onFieldChange("powerRx", v + "W"); showPrxKb = false },
-                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
+                            label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
                                 containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
@@ -332,7 +334,7 @@ private fun RstDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = FontFamily.Monospace
+                fontFamily = NotoSerif
             ),
             shape = MaterialTheme.shapes.small,
             colors = hamFieldColors()
@@ -347,7 +349,7 @@ private fun RstDropdown(
                         Text(
                             o,
                             style = MaterialTheme.typography.bodyMedium,
-                            fontFamily = FontFamily.Monospace,
+                            fontFamily = NotoSerif,
                             fontWeight = if (o == value) FontWeight.Bold else FontWeight.Normal
                         )
                     },
@@ -381,7 +383,7 @@ private fun PowerDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             singleLine = true,
             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                fontFamily = FontFamily.Monospace
+                fontFamily = NotoSerif
             ),
             shape = MaterialTheme.shapes.small,
             colors = hamFieldColors()

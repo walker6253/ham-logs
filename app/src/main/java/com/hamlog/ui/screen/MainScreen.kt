@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.screen
+package com.hamlog.ui.screen
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
+import com.hamlog.ui.theme.NotoSerif
 import java.time.Instant
 import java.time.ZoneId
 import com.hamlog.AppPreferences
@@ -184,7 +185,7 @@ private fun DateCard(dateItem: DateItem, onClick: () -> Unit) {
                 Text(
                     "${dateItem.contactCount} 条",
                     style = MaterialTheme.typography.labelMedium.copy(
-                        fontFamily = FontFamily.Monospace
+                        fontFamily = NotoSerif
                     ),
                     color = MaterialTheme.colorScheme.secondary,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)

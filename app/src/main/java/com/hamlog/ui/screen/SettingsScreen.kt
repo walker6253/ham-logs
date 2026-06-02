@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.screen
+package com.hamlog.ui.screen
 
 import android.content.Intent
 import androidx.compose.animation.*
@@ -23,6 +23,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
+import com.hamlog.ui.theme.NotoSerif
 import com.hamlog.AppPreferences
 import com.hamlog.viewmodel.SettingsViewModel
 import java.time.ZoneId
@@ -118,7 +119,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                fontFamily = FontFamily.Monospace,
+                                fontFamily = NotoSerif,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary
                             ),
@@ -220,7 +221,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Text(
                             "${uiState.totalContacts} 条",
                             style = MaterialTheme.typography.titleMedium.copy(
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = NotoSerif
                             ),
                             color = MaterialTheme.colorScheme.primary
                         )
