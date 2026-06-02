@@ -168,11 +168,11 @@ fun LogEntryScreen(
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("RST 发", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            Text("信号报告-发", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
                             OutlinedTextField(editRstSent, { editRstSent = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("RST 收", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            Text("信号报告-收", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
                             OutlinedTextField(editRstRecv, { editRstRecv = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                     }
@@ -228,7 +228,8 @@ fun LogEntryScreen(
                                         onToggleMode = { viewModel.toggleInputMode() },
                                         qsoTime = uiState.qsoTime,
                                         onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
-                                        onDismissSuggestions = { viewModel.dismissSuggestions() }
+                                        onDismissSuggestions = { viewModel.dismissSuggestions() },
+                                        dismissKeyboards = uiState.dismissKeyboards
                                     )
                                 } else {
                                     IndependentFields(
@@ -241,7 +242,8 @@ fun LogEntryScreen(
                                         onSave = { viewModel.saveContact() },
                                         onToggleMode = { viewModel.toggleInputMode() },
                                         onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
-                                        onDismissSuggestions = { viewModel.dismissSuggestions() }
+                                        onDismissSuggestions = { viewModel.dismissSuggestions() },
+                                        dismissKeyboards = uiState.dismissKeyboards
                                     )
                                 }
                             }

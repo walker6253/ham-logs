@@ -14,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +37,7 @@ fun IndependentFields(
     suggestions: List<String>, showSuggestions: Boolean,
     onFieldChange: (String, String) -> Unit, onSave: () -> Unit, onToggleMode: () -> Unit,
     onSelectSuggestion: (String) -> Unit, onDismissSuggestions: () -> Unit,
-    modifier: Modifier = Modifier
+    dismissKeyboards: Int = 0, modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
@@ -148,42 +150,90 @@ fun IndependentFields(
         Spacer(Modifier.height(8.dp))
 
         // RST
+        var showSentKb by remember { mutableStateOf(false) }
+        var showRecvKb by remember { mutableStateOf(false) }
+        var showPtxKb by remember { mutableStateOf(false) }
+        var showPrxKb by remember { mutableStateOf(false) }
+        LaunchedEffect(dismissKeyboards) {
+            if (dismissKeyboards > 0) {
+                showSentKb = false; showRecvKb = false
+                showPtxKb = false; showPrxKb = false
+            }
+        }
         Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
-                RstDropdown(rstSent, { onFieldChange("rstSent", it) }, Modifier.fillMaxWidth(), "RST 发")
+                // RST keyboard field
+                OutlinedTextField(
+                    value = rstSent,
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) showSentKb = false }.clickable { if (showSentKb) showSentKb = false else { showSentKb = true; showRecvKb = false; showPtxKb = false; showPrxKb = false } },
+                    label = { Text("信号报告-发") },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    shape = MaterialTheme.shapes.small,
+                    colors = hamFieldColors()
+                )
+                RstKeyboard(
+                    value = rstSent,
+                    onValueChange = { onFieldChange("rstSent", it) },
+                    visible = showSentKb,
+                    onDone = { showSentKb = false }
+                )
                 Spacer(Modifier.height(4.dp))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("59", "58", "57", "56").forEach { v ->
+                    listOf("59", "58", "57", "56").forEachIndexed { i, v ->
                         val sel = v == rstSent
+                        val fraction = i.toFloat() / 3f
+                        val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFF9A825), fraction)
                         SuggestionChip(
-                            onClick = { onFieldChange("rstSent", v) },
+                            onClick = { onFieldChange("rstSent", v); showSentKb = false },
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                labelColor = if (sel) chipColor else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
+                            border = if (sel) BorderStroke(1.dp, chipColor.copy(alpha = 0.5f)) else null
                         )
                     }
                 }
             }
             Spacer(Modifier.width(8.dp))
             Column(Modifier.weight(1f)) {
-                RstDropdown(rstReceived, { onFieldChange("rstReceived", it) }, Modifier.fillMaxWidth(), "RST 收")
+                // RST keyboard field
+                OutlinedTextField(
+                    value = rstReceived,
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.fillMaxWidth().onFocusChanged { if (!it.isFocused) showRecvKb = false }.clickable { if (showRecvKb) showRecvKb = false else { showRecvKb = true; showSentKb = false; showPtxKb = false; showPrxKb = false } },
+                    label = { Text("信号报告-收") },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    shape = MaterialTheme.shapes.small,
+                    colors = hamFieldColors()
+                )
+                RstKeyboard(
+                    value = rstReceived,
+                    onValueChange = { onFieldChange("rstReceived", it) },
+                    visible = showRecvKb,
+                    onDone = { showRecvKb = false }
+                )
                 Spacer(Modifier.height(4.dp))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("59", "58", "57", "56").forEach { v ->
+                    listOf("59", "58", "57", "56").forEachIndexed { i, v ->
                         val sel = v == rstReceived
+                        val fraction = i.toFloat() / 3f
+                        val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFF9A825), fraction)
                         SuggestionChip(
-                            onClick = { onFieldChange("rstReceived", v) },
+                            onClick = { onFieldChange("rstReceived", v); showRecvKb = false },
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                labelColor = if (sel) chipColor else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
+                            border = if (sel) BorderStroke(1.dp, chipColor.copy(alpha = 0.5f)) else null
                         )
                     }
                 }
@@ -197,17 +247,19 @@ fun IndependentFields(
                 PowerDropdown(powerTx, { onFieldChange("powerTx", it) }, Modifier.fillMaxWidth(), "发射功率（W）")
                 Spacer(Modifier.height(4.dp))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("5", "10", "50", "100").forEach { v ->
+                    listOf("5", "10", "50", "100").forEachIndexed { i, v ->
                         val sel = (v + "W") == powerTx
+                        val fraction = i.toFloat() / 3f
+                        val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFC62828), fraction)
                         SuggestionChip(
-                            onClick = { onFieldChange("powerTx", v + "W") },
+                            onClick = { onFieldChange("powerTx", v + "W"); showPtxKb = false },
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                labelColor = if (sel) chipColor else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
+                            border = if (sel) BorderStroke(1.dp, chipColor.copy(alpha = 0.5f)) else null
                         )
                     }
                 }
@@ -217,17 +269,19 @@ fun IndependentFields(
                 PowerDropdown(powerRx, { onFieldChange("powerRx", it) }, Modifier.fillMaxWidth(), "接收功率（W）")
                 Spacer(Modifier.height(4.dp))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    listOf("5", "10", "50", "100").forEach { v ->
+                    listOf("5", "10", "50", "100").forEachIndexed { i, v ->
                         val sel = (v + "W") == powerRx
+                        val fraction = i.toFloat() / 3f
+                        val chipColor = lerp(Color(0xFF2E7D32), Color(0xFFC62828), fraction)
                         SuggestionChip(
-                            onClick = { onFieldChange("powerRx", v + "W") },
+                            onClick = { onFieldChange("powerRx", v + "W"); showPrxKb = false },
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                containerColor = if (sel) chipColor.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                labelColor = if (sel) chipColor else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
+                            border = if (sel) BorderStroke(1.dp, chipColor.copy(alpha = 0.5f)) else null
                         )
                     }
                 }

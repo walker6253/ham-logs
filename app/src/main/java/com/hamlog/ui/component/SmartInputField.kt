@@ -3,6 +3,7 @@ package com.hamlog.ui.component
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -29,6 +30,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hamlog.ui.theme.AlxPrimary
 import com.hamlog.ui.theme.AlxPrimaryFixed
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import com.hamlog.ui.theme.LocalSurfaceContainer
 import com.hamlog.ui.theme.LocalSurfaceContainerHigh
 import com.hamlog.ui.theme.LocalSurfaceContainerLow
@@ -56,7 +59,7 @@ fun SmartInputField(
     onCommitNext: () -> Unit, onSave: () -> Unit, onToggleMode: () -> Unit,
     qsoTime: String = "",
     onSelectSuggestion: (String) -> Unit, onDismissSuggestions: () -> Unit,
-    modifier: Modifier = Modifier
+    dismissKeyboards: Int = 0, modifier: Modifier = Modifier
 ) {
     val band = remember(frequency) {
         val mhz = frequency.toDoubleOrNull() ?: 0.0
@@ -229,35 +232,65 @@ fun SmartInputField(
         }
 
         // ── RST 发 + RST 收 ───────────────────────────────────────────────────
+        var showSentKb by remember { mutableStateOf(false) }
+        var showRecvKb by remember { mutableStateOf(false) }
+        var showPtxKb by remember { mutableStateOf(false) }
+        var showPrxKb by remember { mutableStateOf(false) }
+        LaunchedEffect(dismissKeyboards) {
+            if (dismissKeyboards > 0) {
+                showSentKb = false; showRecvKb = false
+                showPtxKb = false; showPrxKb = false
+            }
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AlxLabel("RST发")
-                AlxDropdown(
+                Surface(
+                    modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showSentKb = false }.clickable { if (showSentKb) showSentKb = false else { showSentKb = true; showRecvKb = false; showPtxKb = false; showPrxKb = false } },
+                    shape = MaterialTheme.shapes.small,
+                    color = surfaceContainerLow
+                ) {
+                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+                        Text(rstSent, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+                RstKeyboard(
                     value = rstSent,
-                    options = rstOptions,
-                    onSelect = { onFieldChange("rstSent", it) },
-                    containerColor = surfaceContainerLow
+                    onValueChange = { onFieldChange("rstSent", it) },
+                    visible = showSentKb,
+                    onDone = { showSentKb = false }
                 )
                 QuickChipRow(
                     items = listOf("59", "58", "57", "56"),
                     selected = rstSent,
                     containerHigh = surfaceContainerHigh,
-                    onSelect = { onFieldChange("rstSent", it) }
+                    onSelect = { onFieldChange("rstSent", it); showSentKb = false },
+                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFF9A825)
                 )
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AlxLabel("RST收")
-                AlxDropdown(
+                Surface(
+                    modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showRecvKb = false }.clickable { if (showRecvKb) showRecvKb = false else { showRecvKb = true; showSentKb = false; showPtxKb = false; showPrxKb = false } },
+                    shape = MaterialTheme.shapes.small,
+                    color = surfaceContainerLow
+                ) {
+                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+                        Text(rstReceived, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+                RstKeyboard(
                     value = rstReceived,
-                    options = rstOptions,
-                    onSelect = { onFieldChange("rstReceived", it) },
-                    containerColor = surfaceContainerLow
+                    onValueChange = { onFieldChange("rstReceived", it) },
+                    visible = showRecvKb,
+                    onDone = { showRecvKb = false }
                 )
                 QuickChipRow(
                     items = listOf("59", "58", "57", "56"),
                     selected = rstReceived,
                     containerHigh = surfaceContainerHigh,
-                    onSelect = { onFieldChange("rstReceived", it) }
+                    onSelect = { onFieldChange("rstReceived", it); showRecvKb = false },
+                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFF9A825)
                 )
             }
         }
@@ -266,34 +299,52 @@ fun SmartInputField(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AlxLabel("发射功率 (W)")
-                AlxDropdown(
+                Surface(
+                    modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showPtxKb = false }.clickable { if (showPtxKb) showPtxKb = false else { showPtxKb = true; showPrxKb = false; showSentKb = false; showRecvKb = false } },
+                    shape = MaterialTheme.shapes.small,
+                    color = surfaceContainerLow
+                ) {
+                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+                        Text(powerTx.replace("W", ""), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+                PowerKeyboard(
                     value = powerTx.replace("W", ""),
-                    options = powerOptions.map { it.replace("W", "") },
-                    realOptions = powerOptions,
-                    onSelect = { onFieldChange("powerTx", it) },
-                    containerColor = surfaceContainerLow
+                    onValueChange = { onFieldChange("powerTx", it + "W") },
+                    visible = showPtxKb,
+                    onDone = { showPtxKb = false }
                 )
                 QuickChipRow(
                     items = listOf("5", "10", "50", "100"),
                     selected = powerTx.replace("W", ""),
                     containerHigh = surfaceContainerHigh,
-                    onSelect = { onFieldChange("powerTx", it + "W") }
+                    onSelect = { onFieldChange("powerTx", it + "W"); showPtxKb = false },
+                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFC62828)
                 )
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 AlxLabel("接收功率 (W)")
-                AlxDropdown(
+                Surface(
+                    modifier = Modifier.fillMaxWidth().height(36.dp).focusable().onFocusChanged { if (!it.isFocused) showPrxKb = false }.clickable { if (showPrxKb) showPrxKb = false else { showPrxKb = true; showPtxKb = false; showSentKb = false; showRecvKb = false } },
+                    shape = MaterialTheme.shapes.small,
+                    color = surfaceContainerLow
+                ) {
+                    Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
+                        Text(powerRx.replace("W", ""), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    }
+                }
+                PowerKeyboard(
                     value = powerRx.replace("W", ""),
-                    options = powerOptions.map { it.replace("W", "") },
-                    realOptions = powerOptions,
-                    onSelect = { onFieldChange("powerRx", it) },
-                    containerColor = surfaceContainerLow
+                    onValueChange = { onFieldChange("powerRx", it + "W") },
+                    visible = showPrxKb,
+                    onDone = { showPrxKb = false }
                 )
                 QuickChipRow(
                     items = listOf("5", "10", "50", "100"),
                     selected = powerRx.replace("W", ""),
                     containerHigh = surfaceContainerHigh,
-                    onSelect = { onFieldChange("powerRx", it + "W") }
+                    onSelect = { onFieldChange("powerRx", it + "W"); showPrxKb = false },
+                    gradientStart = Color(0xFF2E7D32), gradientEnd = Color(0xFFC62828)
                 )
             }
         }
@@ -443,20 +494,26 @@ private fun QuickChipRow(
     items: List<String>,
     selected: String,
     containerHigh: androidx.compose.ui.graphics.Color,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
+    gradientStart: Color? = null,
+    gradientEnd: Color? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        items.forEach { v ->
+        items.forEachIndexed { i, v ->
             val isSel = v == selected
-            val bg = if (isSel) AlxPrimaryFixed.copy(alpha = 0.45f) else containerHigh
-            val fg = if (isSel) AlxPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+            val chipColor = if (gradientStart != null && gradientEnd != null) {
+                lerp(gradientStart, gradientEnd, i.toFloat() / (items.size - 1).coerceAtLeast(1))
+            } else AlxPrimary
+            val bg = if (isSel) chipColor.copy(alpha = 0.5f) else containerHigh
+            val fg = if (isSel) chipColor else MaterialTheme.colorScheme.onSurfaceVariant
             Surface(
                 onClick = { onSelect(v) },
                 shape = MaterialTheme.shapes.small,
                 color = bg,
+                border = if (isSel) BorderStroke(1.dp, chipColor.copy(alpha = 0.5f)) else null,
                 modifier = Modifier.weight(1f).height(26.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {

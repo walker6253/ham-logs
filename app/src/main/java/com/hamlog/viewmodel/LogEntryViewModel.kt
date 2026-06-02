@@ -41,7 +41,8 @@ data class LogEntryUiState(
     val callsignSuggestions: List<String> = emptyList(),
     val showSuggestions: Boolean = false,
     val timezone: ZoneId = ZoneId.of("UTC"),
-    val qsoTime: String = ""
+    val qsoTime: String = "",
+    val dismissKeyboards: Int = 0
 )
 
 class LogEntryViewModel(application: Application) : AndroidViewModel(application) {
@@ -322,7 +323,7 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
             } else {
                 // Different date, clear saved form and set defaults
                 prefs.edit().clear().apply()
-                _uiState.value = _uiState.value.copy(rstSent = "59", rstReceived = "59", powerTx = "100W", powerRx = "100W")
+                _uiState.value = _uiState.value.copy(rstSent = "59", rstReceived = "59")
             }
         } catch (_: Exception) {}
     }
@@ -354,11 +355,11 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                 // Reset RST/Power/Notes to defaults after save
                 _uiState.value = _uiState.value.copy(
                     smartInput = "", callsign = "",
-                    rstSent = "59", rstReceived = "59",
-                    powerTx = "100W", powerRx = "100W",
+                    rstSent = "59", rstReceived = "59", powerRx = "100W",
                     notes = "", qsoTime = "",
                     showSavedToast = true, callsignSuggestions = emptyList(),
-                    showSuggestions = false, historicalContacts = null, searchCallsign = "")
+                    showSuggestions = false, historicalContacts = null, searchCallsign = "",
+                    dismissKeyboards = _uiState.value.dismissKeyboards + 1)
                 persistFormState(_uiState.value)
             } catch (_: Exception) {}
         }

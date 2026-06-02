@@ -206,13 +206,13 @@ fun ContactListItem(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (contact.rstSent.isNotBlank()) {
-                                InlineDetail("S", contact.rstSent)
+                                InlineDetail("Set", contact.rstSent)
                             }
                             if (contact.rstReceived.isNotBlank()) {
-                                InlineDetail("R", contact.rstReceived)
+                                InlineDetail("Rcv", contact.rstReceived)
                             }
                             if (contact.powerTx.isNotBlank()) {
-                                InlineDetail("PT", contact.powerTx)
+                                InlineDetail("PS", contact.powerTx)
                             }
                             if (contact.powerRx.isNotBlank()) {
                                 InlineDetail("PR", contact.powerRx)
