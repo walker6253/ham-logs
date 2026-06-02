@@ -59,7 +59,7 @@ fun AlxDatePickerDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         Surface(
-            modifier = Modifier.widthIn(max = 360.dp),
+            modifier = Modifier.widthIn(max = 320.dp).padding(horizontal = 16.dp),
             shape = RoundedCornerShape(32.dp),         // rounded-[2rem]
             color = surfaceLowest,
             shadowElevation = 24.dp

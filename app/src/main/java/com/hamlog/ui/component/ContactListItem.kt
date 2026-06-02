@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.component
+package com.hamlog.ui.component
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -64,7 +64,7 @@ fun ContactListItem(
     modifier: Modifier = Modifier
 ) {
     val timeFormat = remember(timezone) {
-        SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).apply { this.timeZone = timezone }
+        SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).apply { this.timeZone = timezone }
     }
     val timeString = remember(contact.createdAt, timezone) {
         timeFormat.format(Date(contact.createdAt))
@@ -82,7 +82,7 @@ fun ContactListItem(
         colors = CardDefaults.cardColors(containerColor = surfaceLowest),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
 
             // ── Left accent bar ───────────────────────────────────────────────
             Box(
@@ -176,7 +176,7 @@ fun ContactListItem(
                     Spacer(modifier = Modifier.height(6.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.Start,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Left: Frequency
@@ -195,24 +195,25 @@ fun ContactListItem(
                                     color = AlxOnSurface
                                 )
                             }
+                            Spacer(Modifier.weight(1f))
                         }
 
                         // Right: RST发 + RST收 + power
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (contact.rstSent.isNotBlank()) {
-                                InlineDetail("RST发", contact.rstSent)
+                                InlineDetail("S", contact.rstSent)
                             }
                             if (contact.rstReceived.isNotBlank()) {
-                                InlineDetail("RST收", contact.rstReceived)
+                                InlineDetail("R", contact.rstReceived)
                             }
                             if (contact.powerTx.isNotBlank()) {
-                                InlineDetail("发射", contact.powerTx)
+                                InlineDetail("PT", contact.powerTx)
                             }
                             if (contact.powerRx.isNotBlank()) {
-                                InlineDetail("接收", contact.powerRx)
+                                InlineDetail("PR", contact.powerRx)
                             }
                         }
                     }
@@ -246,7 +247,7 @@ private fun InlineDetail(label: String, value: String) {
         )
         Text(
             value,
-            style = MaterialTheme.typography.bodyMedium.copy(
+            style = MaterialTheme.typography.bodySmall.copy(
                 fontWeight = FontWeight.Medium
             ),
             color = AlxOnSurface

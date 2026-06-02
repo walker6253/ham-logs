@@ -1,4 +1,4 @@
-﻿package com.hamlog.viewmodel
+package com.hamlog.viewmodel
 
 import android.app.Application
 import android.util.Log
@@ -78,8 +78,8 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
         val localDate = LocalDate.ofEpochDay(dateEpochDay)
         val today = LocalDate.now(ZoneId.of("Asia/Shanghai"))
         val dateString = when {
-            localDate == today -> "今天"
-            localDate == today.minusDays(1) -> "昨天"
+            localDate == today -> "${localDate.year}年 今天"
+            localDate == today.minusDays(1) -> "${localDate.year}年 昨天"
             else -> "${localDate.year}年${localDate.monthValue}月${localDate.dayOfMonth}日"
         }
         _uiState.value = _uiState.value.copy(dateEpochDay = dateEpochDay, dateString = dateString)
