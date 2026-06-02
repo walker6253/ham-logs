@@ -41,6 +41,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
@@ -113,6 +115,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     val rigList = remember { mutableStateListOf<EquipmentManager.EquipmentCategory>().apply { addAll(EquipmentManager.getRigs()) } }
     fun refreshEquipment() { antennaList.clear(); antennaList.addAll(EquipmentManager.getAntennas()); rigList.clear(); rigList.addAll(EquipmentManager.getRigs()) }
 
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var updateInfo by remember { mutableStateOf<com.hamlog.util.UpdateInfo?>(null) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    val updateScope = rememberCoroutineScope()
     val adifPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -452,6 +458,30 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
 
                 Spacer(Modifier.height(4.dp))
 
+                // Check Update
+                OutlinedButton(
+                    onClick = {
+                        isCheckingUpdate = true
+                        updateScope.launch {
+                            val info = com.hamlog.util.UpdateChecker.checkForUpdate(context)
+                            updateInfo = info
+                            isCheckingUpdate = false
+                            showUpdateDialog = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                    enabled = !isCheckingUpdate,
+                    shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (isCheckingUpdate) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (isCheckingUpdate) "检查中..." else "检查更新", fontSize = 13.sp)
+                }
+
+                Spacer(Modifier.height(4.dp))
                 // Footer
                 val uriHandler = LocalUriHandler.current
                 Row(

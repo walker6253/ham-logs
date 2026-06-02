@@ -216,7 +216,7 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
             if (tokens.isNotEmpty()) (listOf(callsign) + tokens.drop(1)).joinToString(" ")
             else callsign
         }
-        _uiState.value = s.copy(callsign = callsign, showSuggestions = false, smartInput = newSmartInput)
+        _uiState.value = s.copy(callsign = callsign, showSuggestions = false, smartInput = newSmartInput, dismissKeyboards = s.dismissKeyboards + 1)
         // Also refresh history for the selected callsign
         historyJob?.cancel()
         historyJob = viewModelScope.launch {

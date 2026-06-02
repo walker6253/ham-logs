@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.focusable
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -73,6 +74,7 @@ fun SmartInputField(
     val surfaceContainerLow    = LocalSurfaceContainerLow.current
     val surfaceContainerHigh   = LocalSurfaceContainerHigh.current
     val surfaceContainerLowest = LocalSurfaceContainerLowest.current
+    val focusManager = LocalFocusManager.current
 
     Column(
         modifier = modifier
@@ -216,6 +218,7 @@ fun SmartInputField(
             if (dismissKeyboards > 0) {
                 showSentKb = false; showRecvKb = false
                 showPtxKb = false; showPrxKb = false
+                focusManager.clearFocus()
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
