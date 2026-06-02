@@ -21,6 +21,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.hamlog.ui.theme.LocalWindowSizeClass
 import com.hamlog.AppPreferences
 import com.hamlog.viewmodel.SettingsViewModel
 import java.time.ZoneId
@@ -28,6 +30,12 @@ import java.time.ZoneId
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
+    val widthClass = LocalWindowSizeClass.current
+    val hPadding = when (widthClass) {
+        WindowWidthSizeClass.Expanded -> 40.dp
+        WindowWidthSizeClass.Medium -> 24.dp
+        else -> 16.dp
+    }
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val userCallsign by AppPreferences.callsign.collectAsState()
@@ -83,7 +91,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     .fillMaxSize()
                     .padding(padding)
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(horizontal = hPadding, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // ── Callsign ──
@@ -201,39 +209,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     }
                 }
 
-                // ── Scale ──
-                val scale by AppPreferences.scaleFactor.collectAsState()
-                SettingsCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("界面缩放", style = MaterialTheme.typography.titleSmall)
-                            Spacer(Modifier.weight(1f))
-                            Text(
-                                String.format("%.0f%%", scale * 100),
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontFamily = FontFamily.Monospace,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Slider(
-                            value = scale,
-                            onValueChange = { AppPreferences.setScaleFactor(it) },
-                            valueRange = 0.6f..1.3f,
-                            steps = 6,
-                            colors = SliderDefaults.colors(
-                                thumbColor = MaterialTheme.colorScheme.primary,
-                                activeTrackColor = MaterialTheme.colorScheme.primary
-                            )
-                        )
-                        Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                            Text("小", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            Text("大", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-
                 // ── Stats ──
                 SettingsCard {
                     Row(
@@ -288,7 +263,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 ) {
                     Text(
-                        "HAM 日志 v1.0 · 业余无线电通联日志",
+                        "通联日志 v1.0 · 业余无线电通联日志",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         modifier = Modifier.padding(16.dp)

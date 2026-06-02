@@ -4,7 +4,7 @@
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
-        android:label="HAM 日志"
+        android:label="通联日志"
         android:supportsRtl="true">
 
         <activity

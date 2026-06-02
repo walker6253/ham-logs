@@ -18,6 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.hamlog.ui.theme.LocalWindowSizeClass
 import java.time.Instant
 import java.time.ZoneId
 import com.hamlog.AppPreferences
@@ -31,6 +33,17 @@ fun MainScreen(
     onNavigateToLog: (Long) -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
+    val widthClass = LocalWindowSizeClass.current
+    val hPadding = when (widthClass) {
+        WindowWidthSizeClass.Expanded -> 40.dp
+        WindowWidthSizeClass.Medium -> 24.dp
+        else -> 12.dp
+    }
+    val cardSpacing = when (widthClass) {
+        WindowWidthSizeClass.Expanded -> 14.dp
+        WindowWidthSizeClass.Medium -> 12.dp
+        else -> 10.dp
+    }
     val uiState by viewModel.uiState.collectAsState()
     val userCallsign by AppPreferences.callsign.collectAsState()
 
@@ -79,7 +92,7 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = hPadding)
         ) {
             Spacer(Modifier.height(8.dp))
 
@@ -112,7 +125,7 @@ fun MainScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(cardSpacing),
                     contentPadding = PaddingValues(bottom = 88.dp)
                 ) {
                     itemsIndexed(

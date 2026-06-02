@@ -5,14 +5,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hamlog.AppPreferences
 
 val Cyan400 = Color(0xFF00E5FF)
 val Cyan900 = Color(0xFF00363D)
@@ -60,18 +59,42 @@ private val AppShapes = Shapes(extraSmall = RoundedCornerShape(6.dp), small = Ro
 
 @Composable
 fun HamLogTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    val scale by AppPreferences.scaleFactor.collectAsState()
-    val baseDensity = LocalDensity.current
-    val scaledDensity = Density(
-        density = baseDensity.density * scale,
-        fontScale = baseDensity.fontScale * scale
+    val config = LocalConfiguration.current
+    val widthClass = when {
+        config.screenWidthDp < 600 -> WindowWidthSizeClass.Compact
+        config.screenWidthDp < 840 -> WindowWidthSizeClass.Medium
+        else -> WindowWidthSizeClass.Expanded
+    }
+    val scale = when (widthClass) {
+        WindowWidthSizeClass.Compact -> 1.0f
+        WindowWidthSizeClass.Medium -> 1.05f
+        else -> 1.1f
+    }
+
+    val scaledTypography = AppTypography.copy(
+        headlineLarge = AppTypography.headlineLarge.copy(fontSize = (20 * scale).sp, lineHeight = (26 * scale).sp),
+        headlineSmall = AppTypography.headlineSmall.copy(fontSize = (18 * scale).sp, lineHeight = (24 * scale).sp),
+        titleLarge = AppTypography.titleLarge.copy(fontSize = (16 * scale).sp, lineHeight = (22 * scale).sp),
+        titleMedium = AppTypography.titleMedium.copy(fontSize = (13 * scale).sp, lineHeight = (18 * scale).sp),
+        titleSmall = AppTypography.titleSmall.copy(fontSize = (11 * scale).sp, lineHeight = (16 * scale).sp),
+        bodyLarge = AppTypography.bodyLarge.copy(fontSize = (12 * scale).sp, lineHeight = (17 * scale).sp),
+        bodyMedium = AppTypography.bodyMedium.copy(fontSize = (11 * scale).sp, lineHeight = (15 * scale).sp),
+        bodySmall = AppTypography.bodySmall.copy(fontSize = (10 * scale).sp, lineHeight = (13 * scale).sp),
+        labelLarge = AppTypography.labelLarge.copy(fontSize = (12 * scale).sp, lineHeight = (16 * scale).sp),
+        labelMedium = AppTypography.labelMedium.copy(fontSize = (10 * scale).sp, lineHeight = (13 * scale).sp),
+        labelSmall = AppTypography.labelSmall.copy(fontSize = (9 * scale).sp, lineHeight = (11 * scale).sp)
     )
-    CompositionLocalProvider(LocalDensity provides scaledDensity) {
+
+    CompositionLocalProvider(LocalWindowSizeClass provides widthClass) {
         MaterialTheme(
             colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
-            typography = AppTypography,
+            typography = scaledTypography,
             shapes = AppShapes,
             content = content
         )
     }
+}
+
+val LocalWindowSizeClass = staticCompositionLocalOf<WindowWidthSizeClass> {
+    WindowWidthSizeClass.Compact
 }

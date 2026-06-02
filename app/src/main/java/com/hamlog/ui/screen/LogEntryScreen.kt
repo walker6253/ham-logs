@@ -30,6 +30,8 @@ import java.time.ZoneId as JavaZoneId
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import java.util.TimeZone
+import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.hamlog.ui.theme.LocalWindowSizeClass
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +40,12 @@ fun LogEntryScreen(
     viewModel: LogEntryViewModel,
     onNavigateBack: () -> Unit
 ) {
+    val widthClass = LocalWindowSizeClass.current
+    val hPadding = when (widthClass) {
+        WindowWidthSizeClass.Expanded -> 24.dp
+        WindowWidthSizeClass.Medium -> 16.dp
+        else -> 12.dp
+    }
     val uiState by viewModel.uiState.collectAsState()
     LaunchedEffect(dateEpochDay) { viewModel.init(dateEpochDay) }
 
@@ -214,7 +222,7 @@ fun LogEntryScreen(
                 // Input Section
                 Column(Modifier.weight(0.6f)) {
                     Box(Modifier.weight(1f)) {
-                        Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp)) {
+                        Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
                             AnimatedContent(
                                 targetState = uiState.isSmartMode,
                                 transitionSpec = { fadeIn(tween(200)) + slideInHorizontally(tween(200)) { it / 6 } togetherWith fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { -it / 6 } }
@@ -255,7 +263,7 @@ fun LogEntryScreen(
                     Button(
                         onClick = { viewModel.saveContact() },
                         enabled = uiState.callsign.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
                         shape = MaterialTheme.shapes.small,
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) { Text("保存通联", fontWeight = FontWeight.Medium) }
@@ -267,7 +275,7 @@ fun LogEntryScreen(
                 Column(Modifier.weight(0.4f)) {
                     val title = if (isHistorical) "历史  ${uiState.searchCallsign}" else "今日通联"
                     Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                        Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
