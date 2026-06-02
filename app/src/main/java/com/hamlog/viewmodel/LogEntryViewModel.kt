@@ -26,7 +26,6 @@ data class LogEntryUiState(
     val contacts: List<ContactRecord> = emptyList(),
     val historicalContacts: List<ContactRecord>? = null,
     val searchCallsign: String = "",
-    val isSmartMode: Boolean = true,
     val smartInput: String = "",
     val callsign: String = "",
     val frequency: String = "",
@@ -78,10 +77,11 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
     fun init(dateEpochDay: Long) {
         val localDate = LocalDate.ofEpochDay(dateEpochDay)
         val today = LocalDate.now(ZoneId.of("Asia/Shanghai"))
-        val dateString = when {
-            localDate == today -> "${localDate.year}年 今天"
-            localDate == today.minusDays(1) -> "${localDate.year}年 昨天"
-            else -> "${localDate.year}年${localDate.monthValue}月${localDate.dayOfMonth}日"
+        val dateString = "${localDate.year}年${localDate.monthValue}月${localDate.dayOfMonth}日"
+        val displayDate = when {
+            localDate == today -> "今天"
+            localDate == today.minusDays(1) -> "昨天"
+            else -> dateString
         }
         _uiState.value = _uiState.value.copy(dateEpochDay = dateEpochDay, dateString = dateString)
         restoreFormState(dateEpochDay)
@@ -98,10 +98,6 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun toggleInputMode() {
-        _uiState.value = _uiState.value.copy(isSmartMode = !_uiState.value.isSmartMode)
-        persistFormState(_uiState.value)
-    }
 
     fun onSmartInputChanged(input: String) {
         try {
@@ -298,8 +294,7 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                 .putString("powerTx", s.powerTx)
                 .putString("powerRx", s.powerRx)
                 .putString("notes", s.notes)
-                .putBoolean("isSmartMode", s.isSmartMode)
-                .putLong("formDateEpochDay", s.dateEpochDay)
+                    .putLong("formDateEpochDay", s.dateEpochDay)
                 .apply()
         } catch (_: Exception) {}
     }
@@ -318,8 +313,7 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                     powerTx = p.getString("powerTx", "100W") ?: "100W",
                     powerRx = p.getString("powerRx", "100W") ?: "100W",
                     notes = p.getString("notes", "") ?: "",
-                    isSmartMode = p.getBoolean("isSmartMode", true)
-                )
+                    )
             } else {
                 // Different date, clear saved form and set defaults
                 prefs.edit().clear().apply()

@@ -57,7 +57,7 @@ fun SmartInputField(
     rstSent: String, rstReceived: String, powerTx: String, powerRx: String, notes: String,
     suggestions: List<String>, showSuggestions: Boolean,
     onInputChange: (String) -> Unit, onFieldChange: (String, String) -> Unit,
-    onCommitNext: () -> Unit, onSave: () -> Unit, onToggleMode: () -> Unit,
+    onCommitNext: () -> Unit, onSave: () -> Unit,
     qsoTime: String = "",
     onSelectSuggestion: (String) -> Unit, onDismissSuggestions: () -> Unit,
     dismissKeyboards: Int = 0, modifier: Modifier = Modifier
@@ -78,44 +78,6 @@ fun SmartInputField(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-
-        // ── Header: 智能录入 ✦  |  独立 ──────────────────────────────────────
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    "智能录入",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.sp
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Icon(
-                    Icons.Default.AutoFixHigh,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-            TextButton(
-                onClick = onToggleMode,
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp)
-            ) {
-                Icon(Icons.Default.SwapHoriz, null, Modifier.size(13.dp),
-                    tint = MaterialTheme.colorScheme.secondary)
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    "独立",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
-            }
-        }
-
         // ── 三栏信息卡：频率 | 模式 | 波段 ──────────────────────────────────
         // bg-surface-container rounded-xl
         Surface(

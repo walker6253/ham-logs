@@ -13,6 +13,7 @@ import com.hamlog.ui.theme.HamLogTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppPreferences.init(applicationContext)
         setContent {
             HamLogTheme {
                 Surface(

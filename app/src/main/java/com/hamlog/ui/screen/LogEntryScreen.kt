@@ -28,7 +28,6 @@ import androidx.compose.foundation.background
 import com.hamlog.ui.component.ContactListItem
 import com.hamlog.ui.component.AlxDatePickerDialog
 import com.hamlog.data.entity.ContactRecord
-import com.hamlog.ui.component.IndependentFields
 import com.hamlog.ui.component.SmartInputField
 import com.hamlog.viewmodel.LogEntryViewModel
 import java.time.Instant
@@ -200,7 +199,7 @@ fun LogEntryScreen(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text(uiState.dateString, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) },
+                    title = { Text(uiState.dateString, style = MaterialTheme.typography.headlineLarge.copy(fontSize = 28.sp, fontFamily = NotoSerif), fontWeight = FontWeight.Bold) },
                     navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = MaterialTheme.colorScheme.onBackground) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
                 )
@@ -211,43 +210,21 @@ fun LogEntryScreen(
                 Column(Modifier.weight(0.6f)) {
                     Box(Modifier.weight(1f)) {
                         Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
-                            AnimatedContent(
-                                targetState = uiState.isSmartMode,
-                                transitionSpec = { fadeIn(tween(200)) + slideInHorizontally(tween(200)) { it / 6 } togetherWith fadeOut(tween(200)) + slideOutHorizontally(tween(200)) { -it / 6 } }
-                            ) { smart ->
-                                if (smart) {
-                                    SmartInputField(
-                                        smartInput = uiState.smartInput, callsign = uiState.callsign,
-                                        frequency = uiState.frequency, mode = uiState.mode,
-                                        rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
-                                        powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
-                                        suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
-                                        onInputChange = { viewModel.onSmartInputChanged(it) },
-                                        onFieldChange = { f, v -> viewModel.updateField(f, v) },
-                                        onCommitNext = { viewModel.commitNext() },
-                                        onSave = { viewModel.saveContact() },
-                                        onToggleMode = { viewModel.toggleInputMode() },
-                                        qsoTime = uiState.qsoTime,
-                                        onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
-                                        onDismissSuggestions = { viewModel.dismissSuggestions() },
-                                        dismissKeyboards = uiState.dismissKeyboards
-                                    )
-                                } else {
-                                    IndependentFields(
-                                        callsign = uiState.callsign, frequency = uiState.frequency,
-                                        mode = uiState.mode, rstSent = uiState.rstSent,
-                                        rstReceived = uiState.rstReceived, powerTx = uiState.powerTx,
-                                        powerRx = uiState.powerRx, notes = uiState.notes,
-                                        suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
-                                        onFieldChange = { f, v -> viewModel.updateField(f, v) },
-                                        onSave = { viewModel.saveContact() },
-                                        onToggleMode = { viewModel.toggleInputMode() },
-                                        onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
-                                        onDismissSuggestions = { viewModel.dismissSuggestions() },
-                                        dismissKeyboards = uiState.dismissKeyboards
-                                    )
-                                }
-                            }
+                            SmartInputField(
+                                smartInput = uiState.smartInput, callsign = uiState.callsign,
+                                frequency = uiState.frequency, mode = uiState.mode,
+                                rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
+                                powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
+                                suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
+                                onInputChange = { viewModel.onSmartInputChanged(it) },
+                                onFieldChange = { f, v -> viewModel.updateField(f, v) },
+                                onCommitNext = { viewModel.commitNext() },
+                                onSave = { viewModel.saveContact() },
+                                qsoTime = uiState.qsoTime,
+                                onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
+                                onDismissSuggestions = { viewModel.dismissSuggestions() },
+                                dismissKeyboards = uiState.dismissKeyboards
+                            )
                         }
                     }
                     Button(
@@ -269,7 +246,7 @@ fun LogEntryScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(title, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                        Text(title, style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
                         if (!isHistorical) {
                             Text("${displayContacts.size} 条", style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }

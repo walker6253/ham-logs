@@ -50,6 +50,22 @@ fun MainScreen(
     val userCallsign by AppPreferences.callsign.collectAsState()
 
     Scaffold(
+        topBar = {
+            val title = if (userCallsign.isNotBlank()) "${userCallsign} 的通联日志" else "通联日志"
+            TopAppBar(
+                title = {
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
+            )
+        },
         floatingActionButton = {
             var showDatePicker by remember { mutableStateOf(false) }
             if (showDatePicker) {
