@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.component
+package com.hamlog.ui.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -160,7 +160,7 @@ fun IndependentFields(
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                                 labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
@@ -180,7 +180,7 @@ fun IndependentFields(
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                                 labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
@@ -204,7 +204,7 @@ fun IndependentFields(
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                                 labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
@@ -224,7 +224,7 @@ fun IndependentFields(
                             label = { Text(v, style = MaterialTheme.typography.labelSmall, fontFamily = FontFamily.Monospace) },
                             shape = MaterialTheme.shapes.extraSmall,
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                containerColor = if (sel) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                                 labelColor = if (sel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             ),
                             border = if (sel) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
@@ -384,7 +384,7 @@ private fun NotesChips(currentNotes: String, onNotesChange: (String) -> Unit) {
                         label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
                         shape = MaterialTheme.shapes.extraSmall,
                         colors = AssistChipDefaults.assistChipColors(
-                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                             labelColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                         ),
                         border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null
@@ -413,7 +413,7 @@ private fun NotesChips(currentNotes: String, onNotesChange: (String) -> Unit) {
                                 label = { Text(model, style = MaterialTheme.typography.labelSmall) },
                                 shape = MaterialTheme.shapes.extraSmall,
                                 colors = AssistChipDefaults.assistChipColors(
-                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                    containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                                     labelColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                                 ),
                                 border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)) else null

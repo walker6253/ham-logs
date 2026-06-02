@@ -67,26 +67,71 @@ fun AlxDatePickerDialog(
             Column {
 
                 // ── Header ────────────────────────────────────────────────────
-                Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 32.dp, bottom = 16.dp)) {
+                Column(modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 28.dp, bottom = 14.dp)) {
 
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Month/Year title with dropdown arrow
+                        // Month/Year title with year/month dropdowns
+                        var showYearMenu by remember { mutableStateOf(false) }
+                        var showMonthMenu by remember { mutableStateOf(false) }
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable(onClick = {}) // placeholder for year/month picker
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "${yearMonth.year}年 ${yearMonth.monthValue}月",
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 22.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                            // Year
+                            Box {
+                                Text(
+                                    text = "${yearMonth.year}年 ",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.clickable { showYearMenu = true }
+                                )
+                                DropdownMenu(
+                                    expanded = showYearMenu,
+                                    onDismissRequest = { showYearMenu = false }
+                                ) {
+                                    (2020..2030).forEach { y ->
+                                        DropdownMenuItem(
+                                            text = { Text("${y}年") },
+                                            onClick = {
+                                                yearMonth = YearMonth.of(y, yearMonth.monthValue)
+                                                showYearMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                            // Month
+                            Box {
+                                Text(
+                                    text = "${yearMonth.monthValue}月",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.clickable { showMonthMenu = true }
+                                )
+                                DropdownMenu(
+                                    expanded = showMonthMenu,
+                                    onDismissRequest = { showMonthMenu = false }
+                                ) {
+                                    (1..12).forEach { m ->
+                                        DropdownMenuItem(
+                                            text = { Text("${m}月") },
+                                            onClick = {
+                                                yearMonth = YearMonth.of(yearMonth.year, m)
+                                                showMonthMenu = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
                             Spacer(Modifier.width(4.dp))
                             Icon(
                                 Icons.Default.ArrowDropDown,
@@ -112,7 +157,7 @@ fun AlxDatePickerDialog(
                     val weekdays = listOf("一","二","三","四","五","六","日")
                     Row(Modifier.fillMaxWidth()) {
                         weekdays.forEach { wd ->
-                            Box(Modifier.weight(1f).padding(vertical = 8.dp), Alignment.Center) {
+                            Box(Modifier.weight(1f).padding(vertical = 6.dp), Alignment.Center) {
                                 Text(
                                     wd,
                                     style = MaterialTheme.typography.labelSmall.copy(
@@ -141,7 +186,7 @@ fun AlxDatePickerDialog(
                                     val cellIndex = row * 7 + col
                                     val dayNum = cellIndex - startOffset + 1
                                     Box(
-                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        modifier = Modifier.weight(1f).height(44.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         if (dayNum in 1..daysInMonth) {
@@ -154,7 +199,7 @@ fun AlxDatePickerDialog(
                                                     // bg-primary text-on-primary rounded-full shadow
                                                     Box(
                                                         modifier = Modifier
-                                                            .size(40.dp)
+                                                            .size(36.dp)
                                                             .clip(CircleShape)
                                                             .background(AlxPrimary)
                                                             .clickable { selected = date },
@@ -219,7 +264,7 @@ fun AlxDatePickerDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(surfaceLow.copy(alpha = 0.5f))
-                        .padding(horizontal = 24.dp, vertical = 20.dp),
+                        .padding(horizontal = 24.dp, vertical = 18.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {

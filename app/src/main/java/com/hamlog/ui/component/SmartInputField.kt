@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.component
+package com.hamlog.ui.component
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
@@ -451,7 +451,7 @@ private fun QuickChipRow(
     ) {
         items.forEach { v ->
             val isSel = v == selected
-            val bg = if (isSel) AlxPrimaryFixed.copy(alpha = 0.25f) else containerHigh
+            val bg = if (isSel) AlxPrimaryFixed.copy(alpha = 0.45f) else containerHigh
             val fg = if (isSel) AlxPrimary else MaterialTheme.colorScheme.onSurfaceVariant
             Surface(
                 onClick = { onSelect(v) },
@@ -492,7 +492,7 @@ private fun NotesChips(
 
     @Composable
     fun noteChip(tag: String, isSelected: Boolean, onClick: () -> Unit) {
-        val bg = if (isSelected) AlxPrimaryFixed.copy(alpha = 0.25f) else containerHigh
+        val bg = if (isSelected) AlxPrimaryFixed.copy(alpha = 0.45f) else containerHigh
         val fg = if (isSelected) AlxPrimary else MaterialTheme.colorScheme.onSurfaceVariant
         Surface(
             onClick = onClick,

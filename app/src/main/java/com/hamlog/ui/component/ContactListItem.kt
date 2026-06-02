@@ -35,9 +35,10 @@ import java.util.TimeZone
 // ── Accent colour per mode ────────────────────────────────────────────────────
 // Matches image: USB→blue, CW→green, FM→amber/gold, others→primary
 private fun modeAccentColor(mode: String): Color = when (mode.uppercase()) {
-    "USB", "LSB", "SSB" -> Color(0xFF2B5FD9)   // blue
-    "CW"                -> Color(0xFF3DAA6B)   // green
-    "FM", "AM"          -> Color(0xFFC9A227)   // amber/gold
+    "USB", "SSB"        -> Color(0xFFC9A227)   // amber/gold
+    "LSB"                -> Color(0xFFFF8C00)   // orange
+    "CW"                 -> Color(0xFF3DAA6B)   // green
+    "FM", "AM"           -> Color(0xFFD93636)   // red
     "FT8", "FT4",
     "RTTY", "PSK31"     -> Color(0xFF8B5CF6)   // purple
     else                -> Color(0xFF094CB2)
@@ -46,9 +47,10 @@ private fun modeAccentColor(mode: String): Color = when (mode.uppercase()) {
 // Badge colours: bg + text
 private data class BadgeColors(val bg: Color, val fg: Color)
 private fun modeBadgeColors(mode: String): BadgeColors = when (mode.uppercase()) {
-    "USB", "LSB", "SSB" -> BadgeColors(Color(0xFFDEEAFF), Color(0xFF1A45A0))
-    "CW"                -> BadgeColors(Color(0xFFCCF0DC), Color(0xFF1E6E45))
-    "FM", "AM"          -> BadgeColors(Color(0xFFFFF3C4), Color(0xFF7A5C00))
+    "USB", "SSB"        -> BadgeColors(Color(0xFFFFF3C4), Color(0xFF7A5C00))
+    "LSB"                -> BadgeColors(Color(0xFFFFE0B2), Color(0xFFB26500))
+    "CW"                 -> BadgeColors(Color(0xFFCCF0DC), Color(0xFF1E6E45))
+    "FM", "AM"           -> BadgeColors(Color(0xFFFFE0E0), Color(0xFF8B0000))
     "FT8", "FT4",
     "RTTY", "PSK31"     -> BadgeColors(Color(0xFFEDE9FE), Color(0xFF5B21B6))
     else                -> BadgeColors(Color(0xFFE8ECFD), Color(0xFF094CB2))
