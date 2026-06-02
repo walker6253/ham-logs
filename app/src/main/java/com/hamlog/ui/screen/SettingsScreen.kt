@@ -130,12 +130,26 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 if (location != null) {
                     val lat = location.latitude
                     val lng = location.longitude
-                    val pos = String.format("%.5f, %.5f", lat, lng)
-                    locationText = pos
-                    AppPreferences.setLocation(pos)
                     val grid = GridCalculator.latLngToGrid(lat, lng)
                     gridText = grid
                     AppPreferences.setGridSquare(grid)
+                    val pos = try {
+                        val geocoder = android.location.Geocoder(context)
+                        val addresses = geocoder.getFromLocation(lat, lng, 1)
+                        if (!addresses.isNullOrEmpty()) {
+                            val addr = addresses[0]
+                            listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
+                                .filter { it.isNotBlank() }
+                                .joinToString(" ")
+                        } else {
+                            grid
+                        }
+                    } catch (_: Exception) {
+                        grid
+                    }
+                    locationText = pos
+                    AppPreferences.setLocation(pos)
+                    
                 }
             } catch (_: Exception) {}
         }
@@ -279,15 +293,28 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                         try {
                                             val location = lm?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                                                 ?: lm?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                                            if (location != null) {
-                                                val lat = location.latitude
-                                                val lng = location.longitude
-                                                val pos = String.format("%.5f, %.5f", lat, lng)
-                                                locationText = pos
-                                                AppPreferences.setLocation(pos)
-                                                val grid = GridCalculator.latLngToGrid(lat, lng)
-                                                gridText = grid
-                                                AppPreferences.setGridSquare(grid)
+                                                if (location != null) {
+                                                    val lat = location.latitude
+                                                    val lng = location.longitude
+                                                    val grid = GridCalculator.latLngToGrid(lat, lng)
+                                                    gridText = grid
+                                                    AppPreferences.setGridSquare(grid)
+                                                    val pos = try {
+                                                        val geocoder = android.location.Geocoder(context)
+                                                        val addresses = geocoder.getFromLocation(lat, lng, 1)
+                                                        if (!addresses.isNullOrEmpty()) {
+                                                            val addr = addresses[0]
+                                                            listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
+                                                                .filter { it.isNotBlank() }
+                                                                .joinToString(" ")
+                                                        } else {
+                                                            grid
+                                                        }
+                                                    } catch (_: Exception) {
+                                                        grid
+                                                    }
+                                                    locationText = pos
+                                                    AppPreferences.setLocation(pos)
                                             }
                                         } catch (_: Exception) {}
                                     } else {
