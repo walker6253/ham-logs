@@ -128,12 +128,12 @@ fun LogEntryScreen(
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                        OutlinedTextField(editDateStr, {}, Modifier.weight(1f), label = { Text("日期") }, readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodyMedium, shape = MaterialTheme.shapes.small, colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)), trailingIcon = { IconButton(onClick = { showEditDatePicker = true }) { Text("\uD83D\uDCC5") } })
+                        OutlinedTextField(editDateStr, {}, Modifier.weight(1f), label = { Text("日期") }, readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodyMedium, shape = MaterialTheme.shapes.small, colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)), trailingIcon = { IconButton(onClick = { showEditDatePicker = true }) { Text("\uD83D\uDCC5") } })
                         Spacer(Modifier.width(8.dp))
                         // Time button
                         var showEditTimePicker by remember { mutableStateOf(false) }
                         val editTimeLabel = remember(editCreatedAt) { val t = Instant.ofEpochMilli(editCreatedAt).atZone(JavaZoneId.of("Asia/Shanghai")); String.format("%02d:%02d:%02d", t.hour, t.minute, t.second) }
-                        OutlinedTextField(editTimeLabel, {}, Modifier.weight(1f), label = { Text("时间") }, readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = MaterialTheme.shapes.small, colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)), trailingIcon = { IconButton(onClick = { showEditTimePicker = true }) { Text("\uD83D\uDD50") } })
+                        OutlinedTextField(editTimeLabel, {}, Modifier.weight(1f), label = { Text("时间") }, readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = MaterialTheme.shapes.small, colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)), trailingIcon = { IconButton(onClick = { showEditTimePicker = true }) { Text("\uD83D\uDD50") } })
                         if (showEditTimePicker) {
                             val currentTime = Instant.ofEpochMilli(editCreatedAt).atZone(JavaZoneId.of("Asia/Shanghai"))
                             val timePickerState = rememberTimePickerState(
@@ -159,16 +159,16 @@ fun LogEntryScreen(
                             )
                         }
                     }
-                    OutlinedTextField(editCallsign, { editCallsign = it.uppercase() }, Modifier.fillMaxWidth(), label = { Text("呼号") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), shape = MaterialTheme.shapes.small)
+                    OutlinedTextField(editCallsign, { editCallsign = it.uppercase() }, Modifier.fillMaxWidth(), label = { Text("呼号") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold), shape = RoundedCornerShape(12.dp))
                     Row(Modifier.fillMaxWidth()) {
-                        OutlinedTextField(editFreq, { editFreq = it }, Modifier.weight(1f), label = { Text("频率 MHz") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = MaterialTheme.shapes.small)
+                        OutlinedTextField(editFreq, { editFreq = it }, Modifier.weight(1f), label = { Text("频率 MHz") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = RoundedCornerShape(12.dp))
                         Spacer(Modifier.width(8.dp))
                         ExposedDropdownMenuBox(expanded = modeExpanded, onExpandedChange = { modeExpanded = it }, modifier = Modifier.weight(1f)) {
                             OutlinedTextField(
                                 value = editMode, onValueChange = {}, readOnly = true,
                                 label = { Text("模式") }, singleLine = true,
                                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                                shape = MaterialTheme.shapes.small,
+                                shape = RoundedCornerShape(12.dp),
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modeExpanded) },
                                 colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                                 modifier = Modifier.menuAnchor()
@@ -181,15 +181,15 @@ fun LogEntryScreen(
                         }
                     }
                     Row(Modifier.fillMaxWidth()) {
-                        OutlinedTextField(editRstSent, { editRstSent = it }, Modifier.weight(1f), label = { Text("RST 发") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = MaterialTheme.shapes.small)
+                        OutlinedTextField(editRstSent, { editRstSent = it }, Modifier.weight(1f), label = { Text("RST 发") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = RoundedCornerShape(12.dp))
                         Spacer(Modifier.width(8.dp))
-                        OutlinedTextField(editRstRecv, { editRstRecv = it }, Modifier.weight(1f), label = { Text("RST 收") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = MaterialTheme.shapes.small)
+                        OutlinedTextField(editRstRecv, { editRstRecv = it }, Modifier.weight(1f), label = { Text("RST 收") }, singleLine = true, textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), shape = RoundedCornerShape(12.dp))
                     }
-                    OutlinedTextField(editNotes, { editNotes = it }, Modifier.fillMaxWidth(), label = { Text("备注") }, maxLines = 2, textStyle = MaterialTheme.typography.bodyMedium, shape = MaterialTheme.shapes.small)
+                    OutlinedTextField(editNotes, { editNotes = it }, Modifier.fillMaxWidth(), label = { Text("备注") }, maxLines = 2, textStyle = MaterialTheme.typography.bodyMedium, shape = RoundedCornerShape(12.dp))
                 }
             },
             confirmButton = {
-                TextButton(onClick = {
+                Button(onClick = {
                     viewModel.updateContact(contact.copy(
                         dateEpochDay = editDateEpochDay,
                         createdAt = editCreatedAt,

@@ -25,6 +25,7 @@ import java.time.ZoneId
 import com.hamlog.AppPreferences
 import com.hamlog.viewmodel.DateItem
 import com.hamlog.viewmodel.MainViewModel
+import com.hamlog.ui.component.AlxDatePickerDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,28 +52,15 @@ fun MainScreen(
         floatingActionButton = {
             var showDatePicker by remember { mutableStateOf(false) }
             if (showDatePicker) {
-                val datePickerState = rememberDatePickerState(
-                    initialSelectedDateMillis = System.currentTimeMillis()
-                )
-                DatePickerDialog(
-                    onDismissRequest = { showDatePicker = false },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            showDatePicker = false
-                            datePickerState.selectedDateMillis?.let { millis ->
-                                val localDate = Instant.ofEpochMilli(millis)
-                                    .atZone(ZoneId.of("Asia/Shanghai"))
-                                    .toLocalDate()
-                                onNavigateToLog(localDate.toEpochDay())
-                            }
-                        }) { Text("确定") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showDatePicker = false }) { Text("取消") }
+                val todayEpoch = java.time.LocalDate.now().toEpochDay()
+                AlxDatePickerDialog(
+                    initialEpochDay = todayEpoch,
+                    onDismiss = { showDatePicker = false },
+                    onConfirm = { epochDay ->
+                        showDatePicker = false
+                        onNavigateToLog(epochDay)
                     }
-                ) {
-                    DatePicker(state = datePickerState)
-                }
+                )
             }
             FloatingActionButton(
                 onClick = { showDatePicker = true },
