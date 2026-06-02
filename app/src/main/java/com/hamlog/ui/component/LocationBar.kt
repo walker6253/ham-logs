@@ -1,4 +1,6 @@
-﻿package com.hamlog.ui.component
+package com.hamlog.ui.component
+
+import com.hamlog.ui.theme.NotoSerif
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -45,7 +47,7 @@ fun LocationBar(
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.SemiBold
                         ),
-                        fontFamily = FontFamily.Monospace,
+                        fontFamily = NotoSerif,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }

@@ -1,4 +1,4 @@
-﻿package com.hamlog.viewmodel
+package com.hamlog.viewmodel
 
 import android.app.Application
 import android.util.Log
@@ -26,7 +26,6 @@ data class LogEntryUiState(
     val contacts: List<ContactRecord> = emptyList(),
     val historicalContacts: List<ContactRecord>? = null,
     val searchCallsign: String = "",
-    val isSmartMode: Boolean = true,
     val smartInput: String = "",
     val callsign: String = "",
     val frequency: String = "",
@@ -41,7 +40,8 @@ data class LogEntryUiState(
     val callsignSuggestions: List<String> = emptyList(),
     val showSuggestions: Boolean = false,
     val timezone: ZoneId = ZoneId.of("UTC"),
-    val qsoTime: String = ""
+    val qsoTime: String = "",
+    val dismissKeyboards: Int = 0
 )
 
 class LogEntryViewModel(application: Application) : AndroidViewModel(application) {
@@ -77,10 +77,11 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
     fun init(dateEpochDay: Long) {
         val localDate = LocalDate.ofEpochDay(dateEpochDay)
         val today = LocalDate.now(ZoneId.of("Asia/Shanghai"))
-        val dateString = when {
+        val dateString = "${localDate.year}年${localDate.monthValue}月${localDate.dayOfMonth}日"
+        val displayDate = when {
             localDate == today -> "今天"
             localDate == today.minusDays(1) -> "昨天"
-            else -> "${localDate.year}年${localDate.monthValue}月${localDate.dayOfMonth}日"
+            else -> dateString
         }
         _uiState.value = _uiState.value.copy(dateEpochDay = dateEpochDay, dateString = dateString)
         restoreFormState(dateEpochDay)
@@ -97,10 +98,6 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun toggleInputMode() {
-        _uiState.value = _uiState.value.copy(isSmartMode = !_uiState.value.isSmartMode)
-        persistFormState(_uiState.value)
-    }
 
     fun onSmartInputChanged(input: String) {
         try {
@@ -219,7 +216,16 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
             if (tokens.isNotEmpty()) (listOf(callsign) + tokens.drop(1)).joinToString(" ")
             else callsign
         }
-        _uiState.value = s.copy(callsign = callsign, showSuggestions = false, smartInput = newSmartInput)
+        _uiState.value = s.copy(callsign = callsign, showSuggestions = false, smartInput = newSmartInput, dismissKeyboards = s.dismissKeyboards + 1)
+        // Also refresh history for the selected callsign
+        historyJob?.cancel()
+        historyJob = viewModelScope.launch {
+            try {
+                repository.searchContactsByCallsignPrefix(callsign).catch {}.collect {
+                    _uiState.value = _uiState.value.copy(historicalContacts = it.ifEmpty { null })
+                }
+            } catch (_: Exception) {}
+        }
         viewModelScope.launch {
             try {
                 val last = repository.getLastContactByCallsign(callsign) ?: return@launch
@@ -297,8 +303,7 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                 .putString("powerTx", s.powerTx)
                 .putString("powerRx", s.powerRx)
                 .putString("notes", s.notes)
-                .putBoolean("isSmartMode", s.isSmartMode)
-                .putLong("formDateEpochDay", s.dateEpochDay)
+                    .putLong("formDateEpochDay", s.dateEpochDay)
                 .apply()
         } catch (_: Exception) {}
     }
@@ -317,12 +322,11 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                     powerTx = p.getString("powerTx", "100W") ?: "100W",
                     powerRx = p.getString("powerRx", "100W") ?: "100W",
                     notes = p.getString("notes", "") ?: "",
-                    isSmartMode = p.getBoolean("isSmartMode", true)
-                )
+                    )
             } else {
                 // Different date, clear saved form and set defaults
                 prefs.edit().clear().apply()
-                _uiState.value = _uiState.value.copy(rstSent = "59", rstReceived = "59", powerTx = "100W", powerRx = "100W")
+                _uiState.value = _uiState.value.copy(rstSent = "59", rstReceived = "59")
             }
         } catch (_: Exception) {}
     }
@@ -354,11 +358,11 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                 // Reset RST/Power/Notes to defaults after save
                 _uiState.value = _uiState.value.copy(
                     smartInput = "", callsign = "",
-                    rstSent = "59", rstReceived = "59",
-                    powerTx = "100W", powerRx = "100W",
+                    rstSent = "59", rstReceived = "59", powerRx = "100W",
                     notes = "", qsoTime = "",
                     showSavedToast = true, callsignSuggestions = emptyList(),
-                    showSuggestions = false, historicalContacts = null, searchCallsign = "")
+                    showSuggestions = false, historicalContacts = null, searchCallsign = "",
+                    dismissKeyboards = _uiState.value.dismissKeyboards + 1)
                 persistFormState(_uiState.value)
             } catch (_: Exception) {}
         }

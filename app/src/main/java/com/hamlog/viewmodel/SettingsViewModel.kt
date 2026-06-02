@@ -12,6 +12,7 @@ import com.hamlog.data.AppDatabase
 import com.hamlog.data.entity.ContactRecord
 import com.hamlog.data.repository.LogRepository
 import com.hamlog.util.AdifExporter
+import com.hamlog.util.AdifImporter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,9 +23,10 @@ import java.io.File
 import java.time.ZoneId
 
 data class SettingsUiState(
-    val isSmartMode: Boolean = true, val totalContacts: Int = 0,
+    val totalContacts: Int = 0,
     val isExporting: Boolean = false, val exportComplete: Boolean = false,
-    val exportUri: Uri? = null, val selectedTimezone: ZoneId = ZoneId.of("UTC")
+    val exportUri: Uri? = null, val selectedTimezone: ZoneId = ZoneId.of("Asia/Shanghai"),
+    val isImporting: Boolean = false, val importResult: AdifImporter.ImportResult? = null
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -35,6 +37,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val repository: LogRepository
 
     init {
+        _uiState.value = _uiState.value.copy(selectedTimezone = AppPreferences.timezone.value)
         val db = try { AppDatabase.getInstance(application) }
         catch (e: Exception) { Log.e("SettingsVM", "DB", e); AppDatabase.getInstance(application) }
         repository = LogRepository(db)
@@ -49,7 +52,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setTimezone(zoneId: ZoneId) { _uiState.value = _uiState.value.copy(selectedTimezone = zoneId); AppPreferences.setTimezone(zoneId) }
-    fun toggleSmartMode() { _uiState.value = _uiState.value.copy(isSmartMode = !_uiState.value.isSmartMode) }
 
     fun exportAdif() {
         viewModelScope.launch {
@@ -66,4 +68,40 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetExportState() { _uiState.value = _uiState.value.copy(exportComplete = false, exportUri = null) }
+
+    fun importAdif(uri: Uri) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isImporting = true, importResult = null)
+            try {
+                val context = getApplication<Application>()
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val content = inputStream?.bufferedReader()?.readText() ?: ""
+                inputStream?.close()
+
+                val records = AdifImporter.parse(content)
+                var imported = 0
+                var skipped = 0
+                for (record in records) {
+                    try {
+                        repository.insertContact(record)
+                        imported++
+                    } catch (e: Exception) {
+                        skipped++
+                    }
+                }
+                _uiState.value = _uiState.value.copy(
+                    isImporting = false,
+                    importResult = AdifImporter.ImportResult(imported, skipped, emptyList())
+                )
+                loadStats()
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isImporting = false,
+                    importResult = AdifImporter.ImportResult(0, 0, listOf(e.message ?: "Unknown error"))
+                )
+            }
+        }
+    }
+
+    fun dismissImportResult() { _uiState.value = _uiState.value.copy(importResult = null) }
 }
