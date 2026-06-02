@@ -135,7 +135,7 @@ fun LogEntryScreen(
                 Column(modifier = Modifier.padding(start = 32.dp, end = 32.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("日期", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            Text("日期", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = Color(0xFF4CAF50))
                             OutlinedTextField(editDateStr, {}, Modifier.fillMaxWidth(), readOnly = true, singleLine = true, enabled = false, textStyle = MaterialTheme.typography.bodyMedium, shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = Color.Transparent, disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLow), trailingIcon = { IconButton(onClick = { showEditDatePicker = true }) { Text("\uD83D\uDCC5", style = MaterialTheme.typography.bodySmall) } })
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -314,11 +314,11 @@ fun LogEntryScreen(
             enter = fadeIn(tween(200)) + slideInVertically(tween(300)) { -it },
             exit = fadeOut(tween(300)) + slideOutVertically(tween(300)) { -it }
         ) {
-            Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.tertiaryContainer, tonalElevation = 0.dp) {
+            Surface(shape = RoundedCornerShape(16.dp), color = Color(0xFF4CAF50).copy(alpha = 0.12f), tonalElevation = 0.dp) {
                 Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text("\u2713", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.tertiary)
                     Spacer(Modifier.width(8.dp))
-                    Text("保存成功", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    Text("保存成功", style = MaterialTheme.typography.labelLarge, color = Color(0xFF2E7D32))
                 }
             }
         }

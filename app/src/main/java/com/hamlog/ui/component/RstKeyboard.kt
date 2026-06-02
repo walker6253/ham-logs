@@ -45,7 +45,6 @@ fun RstKeyboard(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 RstKeyRow((1..5).toList(), 5) { appendDigit(value, onValueChange, it) }
-                RstKeyRow((1..5).toList(), 5) { appendDigit(value, onValueChange, it) }
                 RstKeyRow((6..9).toList(), 4) { appendDigit(value, onValueChange, it) }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     OutlinedButton(
