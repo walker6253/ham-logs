@@ -1,4 +1,4 @@
-﻿package com.hamlog
+package com.hamlog
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +12,7 @@ object AppPreferences {
     private val _callsign = MutableStateFlow("")
     val callsign: StateFlow<String> = _callsign.asStateFlow()
 
-    private val _scaleFactor = MutableStateFlow(0.5f)
+    private val _scaleFactor = MutableStateFlow(0.9f)
     val scaleFactor: StateFlow<Float> = _scaleFactor.asStateFlow()
 
     fun setTimezone(zoneId: ZoneId) { _timezone.value = zoneId }
