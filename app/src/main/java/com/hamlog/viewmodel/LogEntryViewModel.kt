@@ -33,8 +33,8 @@ data class LogEntryUiState(
     val mode: String = "",
     val rstSent: String = "59",
     val rstReceived: String = "59",
-    val powerTx: String = "100W",
-    val powerRx: String = "100W",
+    val powerTx: String = "100",
+    val powerRx: String = "100",
     val notes: String = "",
     val showSavedToast: Boolean = false,
     val showDeleteConfirm: ContactRecord? = null,
@@ -117,8 +117,8 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                 mode = if (parsed.mode.isNotBlank()) parsed.mode else if (parsed.frequencyMHz.isNotBlank()) BandUtil.autoMode(parsed.frequencyMHz.toDoubleOrNull() ?: 0.0).ifBlank { s.mode } else if (input.isBlank()) preEditMode else s.mode,
                 rstSent = if (parsed.rstSent.isNotBlank()) parsed.rstSent else s.rstSent,
                 rstReceived = if (parsed.rstReceived.isNotBlank()) parsed.rstReceived else s.rstReceived,
-                powerTx = if (parsed.powerTx.isNotBlank()) parsed.powerTx else s.powerTx,
-                powerRx = if (parsed.powerRx.isNotBlank()) parsed.powerRx else s.powerRx,
+                powerTx = if (parsed.powerTx.isNotBlank()) parsed.powerTx.trimEnd('W','w').trim() else s.powerTx,
+                powerRx = if (parsed.powerRx.isNotBlank()) parsed.powerRx.trimEnd('W','w').trim() else s.powerRx,
                 notes = if (parsed.notes.isNotBlank()) parsed.notes else s.notes
             )
             // Capture QSO time when rstReceived is first set via smart input
@@ -151,8 +151,8 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                 "mode" -> _uiState.value.copy(mode = v)
                 "rstSent" -> _uiState.value.copy(rstSent = v)
                 "rstReceived" -> _uiState.value.copy(rstReceived = v)
-                "powerTx" -> _uiState.value.copy(powerTx = v)
-                "powerRx" -> _uiState.value.copy(powerRx = v)
+                "powerTx" -> _uiState.value.copy(powerTx = v.trimEnd('W', 'w').trim())
+                "powerRx" -> _uiState.value.copy(powerRx = v.trimEnd('W', 'w').trim())
                 "notes" -> _uiState.value.copy(notes = v)
                 else -> _uiState.value
             }
@@ -320,8 +320,8 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                     mode = p.getString("mode", "") ?: "",
                     rstSent = p.getString("rstSent", "59") ?: "59",
                     rstReceived = p.getString("rstReceived", "59") ?: "59",
-                    powerTx = p.getString("powerTx", "100W") ?: "100W",
-                    powerRx = p.getString("powerRx", "100W") ?: "100W",
+                    powerTx = p.getString("powerTx", "100") ?: "100",
+                    powerRx = p.getString("powerRx", "100") ?: "100",
                     notes = p.getString("notes", "") ?: "",
                     )
             } else {
@@ -354,12 +354,12 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                     dateEpochDay = s.dateEpochDay, callsign = s.callsign.uppercase().trim(),
                     frequencyMHz = s.frequency.toDoubleOrNull() ?: 0.0, mode = s.mode.trim(),
                     rstSent = s.rstSent.trim(), rstReceived = s.rstReceived.trim(),
-                    powerTx = s.powerTx.trim(), powerRx = s.powerRx.trim(), notes = s.notes.trim()
+                    powerTx = s.powerTx.trimEnd('W', 'w').trim(), powerRx = s.powerRx.trimEnd('W', 'w').trim(), notes = s.notes.trim()
                 ))
                 // Reset RST/Power/Notes to defaults after save
                 _uiState.value = _uiState.value.copy(
                     smartInput = "", callsign = "",
-                    rstSent = "59", rstReceived = "59", powerRx = "100W",
+                    rstSent = "59", rstReceived = "59", powerRx = "100",
                     notes = "", qsoTime = "",
                     showSavedToast = true, callsignSuggestions = emptyList(),
                     showSuggestions = false, historicalContacts = null, searchCallsign = "",
@@ -372,7 +372,7 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                             dateEpochDay = s.dateEpochDay, callsign = s.callsign.uppercase().trim(),
                             frequencyMHz = s.frequency.toDoubleOrNull() ?: 0.0, mode = s.mode.trim(),
                             rstSent = s.rstSent.trim(), rstReceived = s.rstReceived.trim(),
-                            powerTx = s.powerTx.trim(), powerRx = s.powerRx.trim(), notes = s.notes.trim()
+                            powerTx = s.powerTx.trimEnd('W', 'w').trim(), powerRx = s.powerRx.trimEnd('W', 'w').trim(), notes = s.notes.trim()
                         )
                         CloudlogSync.syncContacts(
                             baseUrl = AppPreferences.cloudlogUrl.value,

@@ -6,10 +6,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,11 +37,12 @@ import com.hamlog.ui.component.AlxDatePickerDialog
 fun MainScreen(
     viewModel: MainViewModel,
     onNavigateToLog: (Long) -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToStats: () -> Unit
 ) {
     val widthClass = LocalWindowSizeClass.current
     val hPadding = when (widthClass) {
-        WindowWidthSizeClass.Expanded -> 40.dp
+        WindowWidthSizeClass.Expanded -> 48.dp
         WindowWidthSizeClass.Medium -> 24.dp
         else -> 12.dp
     }
@@ -46,6 +51,7 @@ fun MainScreen(
         WindowWidthSizeClass.Medium -> 12.dp
         else -> 10.dp
     }
+    val useTwoColumns = widthClass == WindowWidthSizeClass.Expanded
     val uiState by viewModel.uiState.collectAsState()
     val userCallsign by AppPreferences.callsign.collectAsState()
 
@@ -59,6 +65,15 @@ fun MainScreen(
                         style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif),
                         fontWeight = FontWeight.Bold
                     )
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToStats) {
+                        Icon(
+                            Icons.Filled.BarChart,
+                            contentDescription = "统计",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -125,6 +140,31 @@ fun MainScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                         )
+                    }
+                }
+            } else if (useTwoColumns) {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 320.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(cardSpacing),
+                    horizontalArrangement = Arrangement.spacedBy(cardSpacing),
+                    contentPadding = PaddingValues(bottom = 88.dp)
+                ) {
+                    gridItemsIndexed(
+                        uiState.dates,
+                        key = { _, item -> item.dateEpochDay }
+                    ) { index, dateItem ->
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn(
+                                animationSpec = tween(300, delayMillis = index * 50)
+                            ) + slideInVertically(
+                                animationSpec = tween(300, delayMillis = index * 50),
+                                initialOffsetY = { it / 4 }
+                            )
+                        ) {
+                            DateCard(dateItem) { onNavigateToLog(dateItem.dateEpochDay) }
+                        }
                     }
                 }
             } else {

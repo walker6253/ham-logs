@@ -1,8 +1,22 @@
-﻿package com.hamlog.ui.navigation
+package com.hamlog.ui.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Settings
@@ -21,13 +35,21 @@ import androidx.navigation.navArgument
 import com.hamlog.ui.screen.LogEntryScreen
 import com.hamlog.ui.screen.MainScreen
 import com.hamlog.ui.screen.SettingsScreen
+import com.hamlog.ui.screen.StatsScreen
 import com.hamlog.viewmodel.LogEntryViewModel
 import com.hamlog.viewmodel.MainViewModel
 import com.hamlog.viewmodel.SettingsViewModel
+import com.hamlog.viewmodel.StatsViewModel
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     data object Main : Screen("main", "日志", Icons.Default.DateRange)
     data object Settings : Screen("settings", "设置", Icons.Default.Settings)
+}
+
+private object Routes {
+    const val STATS = "stats"
+    const val LOG = "log/{dateEpochDay}"
+    fun log(dateEpochDay: Long) = "log/$dateEpochDay"
 }
 
 val bottomNavItems = listOf(Screen.Main, Screen.Settings)
@@ -45,48 +67,67 @@ fun NavGraph() {
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 0.dp,
-                    contentColor = MaterialTheme.colorScheme.onSurface
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 0.dp,
+                    color = MaterialTheme.colorScheme.background,
+                    tonalElevation = 0.dp
                 ) {
-                    bottomNavItems.forEach { screen ->
-                        val selected = currentRoute == screen.route
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    screen.icon,
-                                    contentDescription = screen.title,
-                                    tint = if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            label = {
-                                Text(
-                                    screen.title,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = if (selected) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
-                            selected = selected,
-                            onClick = {
-                                if (currentRoute != screen.route) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(Screen.Main.route) { saveState = true }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                }
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                            )
+                    Column {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(0.5.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
                         )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 6.dp, bottom = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            bottomNavItems.forEach { screen ->
+                                val selected = currentRoute == screen.route
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.5f)
+                                        .clickable(
+                                            indication = null,
+                                            interactionSource = remember { MutableInteractionSource() }
+                                        ) {
+                                            if (currentRoute != screen.route) {
+                                                navController.navigate(screen.route) {
+                                                    popUpTo(Screen.Main.route) { saveState = true }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                        },
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(if (selected) 4.dp else 0.dp)
+                                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                                    )
+                                    Icon(
+                                        screen.icon,
+                                        contentDescription = screen.title,
+                                        tint = if (selected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.size(22.dp)
+                                    )
+                                    Text(
+                                        screen.title,
+                                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                        color = if (selected) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -129,12 +170,13 @@ fun NavGraph() {
                 val vm: MainViewModel = viewModel()
                 MainScreen(
                     vm,
-                    onNavigateToLog = { navController.navigate("log/$it") },
-                    onNavigateToSettings = {}
+                    onNavigateToLog = { navController.navigate(Routes.log(it)) },
+                    onNavigateToSettings = {},
+                    onNavigateToStats = { navController.navigate(Routes.STATS) }
                 )
             }
             composable(
-                "log/{dateEpochDay}",
+                Routes.LOG,
                 arguments = listOf(navArgument("dateEpochDay") { type = NavType.LongType })
             ) { entry ->
                 val date = entry.arguments?.getLong("dateEpochDay") ?: return@composable
@@ -144,6 +186,10 @@ fun NavGraph() {
             composable(Screen.Settings.route) {
                 val vm: SettingsViewModel = viewModel()
                 SettingsScreen(vm)
+            }
+            composable(Routes.STATS) {
+                val vm: StatsViewModel = viewModel()
+                StatsScreen(vm, onNavigateBack = { navController.popBackStack() })
             }
         }
     }

@@ -55,6 +55,7 @@ fun LogEntryScreen(
         WindowWidthSizeClass.Medium -> 16.dp
         else -> 12.dp
     }
+    val isWide = widthClass != WindowWidthSizeClass.Compact
     val uiState by viewModel.uiState.collectAsState()
     LaunchedEffect(dateEpochDay) { viewModel.init(dateEpochDay) }
 
@@ -95,8 +96,8 @@ fun LogEntryScreen(
         var editMode by remember(contact.id) { mutableStateOf(contact.mode) }
         var editRstSent by remember(contact.id) { mutableStateOf(contact.rstSent) }
         var editRstRecv by remember(contact.id) { mutableStateOf(contact.rstReceived) }
-        var editPowerTx by remember(contact.id) { mutableStateOf(contact.powerTx) }
-        var editPowerRx by remember(contact.id) { mutableStateOf(contact.powerRx) }
+        var editPowerTx by remember(contact.id) { mutableStateOf(contact.powerTx.trimEnd('W', 'w').trim()) }
+        var editPowerRx by remember(contact.id) { mutableStateOf(contact.powerRx.trimEnd('W', 'w').trim()) }
         var editNotes by remember(contact.id) { mutableStateOf(contact.notes) }
         var editDateEpochDay by remember(contact.id) { mutableStateOf(contact.dateEpochDay) }
         var editCreatedAt by remember(contact.id) { mutableStateOf(contact.createdAt) }
@@ -182,11 +183,11 @@ fun LogEntryScreen(
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("我的功率", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            Text("我的功率 (W)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
                             OutlinedTextField(editPowerTx, { editPowerTx = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("对方功率", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            Text("对方功率 (W)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
                             OutlinedTextField(editPowerRx, { editPowerRx = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                     }
@@ -198,7 +199,7 @@ fun LogEntryScreen(
                     Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { editingContact = null }) { Text("取消", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Spacer(Modifier.width(16.dp))
-                        Button(onClick = { viewModel.updateContact(contact.copy(dateEpochDay = editDateEpochDay, createdAt = editCreatedAt, callsign = editCallsign.trim(), frequencyMHz = editFreq.toDoubleOrNull() ?: contact.frequencyMHz, mode = editMode.trim(), rstSent = editRstSent.trim(), rstReceived = editRstRecv.trim(), powerTx = editPowerTx.trim(), powerRx = editPowerRx.trim(), notes = editNotes.trim())); editingContact = null }, shape = RoundedCornerShape(50), elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)) { Text("保存", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onPrimary) }
+                        Button(onClick = { viewModel.updateContact(contact.copy(dateEpochDay = editDateEpochDay, createdAt = editCreatedAt, callsign = editCallsign.trim(), frequencyMHz = editFreq.toDoubleOrNull() ?: contact.frequencyMHz, mode = editMode.trim(), rstSent = editRstSent.trim(), rstReceived = editRstRecv.trim(), powerTx = editPowerTx.trim().trimEnd('W', 'w').trim(), powerRx = editPowerRx.trim().trimEnd('W', 'w').trim(), notes = editNotes.trim())); editingContact = null }, shape = RoundedCornerShape(50), elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)) { Text("保存", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onPrimary) }
                     }
                 }
             }
@@ -219,97 +220,201 @@ fun LogEntryScreen(
                 )
             }
         ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding)) {
-                // Input Section
-                Column(Modifier.weight(0.6f)) {
-                    Box(Modifier.weight(1f)) {
-                        Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
-                            SmartInputField(
-                                smartInput = uiState.smartInput, callsign = uiState.callsign,
-                                frequency = uiState.frequency, mode = uiState.mode,
-                                rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
-                                powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
-                                suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
-                                onInputChange = { viewModel.onSmartInputChanged(it) },
-                                onFieldChange = { f, v -> viewModel.updateField(f, v) },
-                                onCommitNext = { viewModel.commitNext() },
-                                onSave = { viewModel.saveContact() },
-                                qsoTime = uiState.qsoTime,
-                                onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
-                                onDismissSuggestions = { viewModel.dismissSuggestions() },
-                                dismissKeyboards = uiState.dismissKeyboards
-                            )
-                        }
-                    }
-                    Button(
-                        onClick = { viewModel.saveContact() },
-                        enabled = uiState.callsign.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
-                        shape = MaterialTheme.shapes.small,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) { Text("保存通联", fontWeight = FontWeight.Medium) }
-                }
-
-                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-
-                // Contact List Section
-                Column(Modifier.weight(0.4f)) {
-                    val title = if (isHistorical) "历史  ${uiState.searchCallsign}" else "今日通联"
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(title, style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                        if (!isHistorical) {
-                            Text("${displayContacts.size} 条", style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    if (displayContacts.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), Alignment.Center) {
-                            Text(if (isHistorical) "无历史记录" else "暂无记录", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-                        }
-                    } else {
-                        LazyColumn(
-                            Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(displayContacts, key = { it.id }) { c ->
-                                val dismissState = rememberSwipeToDismissBoxState(
-                                    confirmValueChange = {
-                                        if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
-                                            viewModel.requestDelete(c)
-                                        }
-                                        false
-                                    }
+            if (isWide) {
+                Row(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    // Input Section (left, ~55%)
+                    Column(Modifier.weight(0.55f).fillMaxHeight()) {
+                        Box(Modifier.weight(1f)) {
+                            Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
+                                SmartInputField(
+                                    smartInput = uiState.smartInput, callsign = uiState.callsign,
+                                    frequency = uiState.frequency, mode = uiState.mode,
+                                    rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
+                                    powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
+                                    suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
+                                    onInputChange = { viewModel.onSmartInputChanged(it) },
+                                    onFieldChange = { f, v -> viewModel.updateField(f, v) },
+                                    onCommitNext = { viewModel.commitNext() },
+                                    onSave = { viewModel.saveContact() },
+                                    qsoTime = uiState.qsoTime,
+                                    onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
+                                    onDismissSuggestions = { viewModel.dismissSuggestions() },
+                                    dismissKeyboards = uiState.dismissKeyboards
                                 )
-                                SwipeToDismissBox(
-                                    state = dismissState,
-                                    backgroundContent = {
-                                    Row(
-                                        Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                            }
+                        }
+                        Button(
+                            onClick = { viewModel.saveContact() },
+                            enabled = uiState.callsign.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
+                            shape = MaterialTheme.shapes.small,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) { Text("保存通联", fontWeight = FontWeight.Medium) }
+                    }
+
+                    VerticalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+                    // Contact List Section (right, ~45%)
+                    Column(Modifier.weight(0.45f).fillMaxHeight()) {
+                        val title = if (isHistorical) "历史  ${uiState.searchCallsign}" else "今日通联"
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            if (!isHistorical) {
+                                Text("${displayContacts.size} 条", style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (displayContacts.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                                Text(if (isHistorical) "无历史记录" else "暂无记录", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            }
+                        } else {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(displayContacts, key = { it.id }) { c ->
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = {
+                                            if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                                viewModel.requestDelete(c)
+                                            }
+                                            false
+                                        }
+                                    )
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {
+                                            Row(
+                                                Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "删除",
+                                                    tint = Color(0xFFFF4444),
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "删除",
+                                                    tint = Color(0xFFFF4444),
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                            }
+                                        },
+                                        enableDismissFromStartToEnd = true,
+                                        enableDismissFromEndToStart = true
                                     ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "删除",
-                                            tint = Color(0xFFFF4444),
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "删除",
-                                            tint = Color(0xFFFF4444),
-                                            modifier = Modifier.size(28.dp)
-                                        )
+                                        ContactListItem(c, { viewModel.requestDelete(c) }, tz, { editingContact = c })
                                     }
-                                },
-                                    enableDismissFromStartToEnd = true,
-                                    enableDismissFromEndToStart = true
-                                ) {
-                                    ContactListItem(c, { viewModel.requestDelete(c) }, tz, { editingContact = c })
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Column(Modifier.fillMaxSize().padding(padding)) {
+                    // Input Section
+                    Column(Modifier.weight(0.6f)) {
+                        Box(Modifier.weight(1f)) {
+                            Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
+                                SmartInputField(
+                                    smartInput = uiState.smartInput, callsign = uiState.callsign,
+                                    frequency = uiState.frequency, mode = uiState.mode,
+                                    rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
+                                    powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
+                                    suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
+                                    onInputChange = { viewModel.onSmartInputChanged(it) },
+                                    onFieldChange = { f, v -> viewModel.updateField(f, v) },
+                                    onCommitNext = { viewModel.commitNext() },
+                                    onSave = { viewModel.saveContact() },
+                                    qsoTime = uiState.qsoTime,
+                                    onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
+                                    onDismissSuggestions = { viewModel.dismissSuggestions() },
+                                    dismissKeyboards = uiState.dismissKeyboards
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = { viewModel.saveContact() },
+                            enabled = uiState.callsign.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
+                            shape = MaterialTheme.shapes.small,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) { Text("保存通联", fontWeight = FontWeight.Medium) }
+                    }
+
+                    HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+                    // Contact List Section
+                    Column(Modifier.weight(0.4f)) {
+                        val title = if (isHistorical) "历史  ${uiState.searchCallsign}" else "今日通联"
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            if (!isHistorical) {
+                                Text("${displayContacts.size} 条", style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (displayContacts.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                                Text(if (isHistorical) "无历史记录" else "暂无记录", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            }
+                        } else {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(displayContacts, key = { it.id }) { c ->
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = {
+                                            if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                                viewModel.requestDelete(c)
+                                            }
+                                            false
+                                        }
+                                    )
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {
+                                        Row(
+                                            Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "删除",
+                                                tint = Color(0xFFFF4444),
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "删除",
+                                                tint = Color(0xFFFF4444),
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                    },
+                                        enableDismissFromStartToEnd = true,
+                                        enableDismissFromEndToStart = true
+                                    ) {
+                                        ContactListItem(c, { viewModel.requestDelete(c) }, tz, { editingContact = c })
+                                    }
                                 }
                             }
                         }

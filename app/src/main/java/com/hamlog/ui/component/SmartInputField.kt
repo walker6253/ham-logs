@@ -284,20 +284,20 @@ fun SmartInputField(
                     color = surfaceContainerLow
                 ) {
                     Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
-                        Text(powerTx.replace("W", ""), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text(powerTx, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
                 PowerKeyboard(
-                    value = powerTx.replace("W", ""),
-                    onValueChange = { onFieldChange("powerTx", it + "W") },
+                    value = powerTx,
+                    onValueChange = { onFieldChange("powerTx", it) },
                     visible = showPtxKb,
                     onDone = { showPtxKb = false }
                 )
                 QuickChipRow(
                     items = listOf("5", "10", "50", "100"),
-                    selected = powerTx.replace("W", ""),
+                    selected = powerTx,
                     containerHigh = surfaceContainerHigh,
-                    onSelect = { onFieldChange("powerTx", it + "W"); showPtxKb = false },
+                    onSelect = { onFieldChange("powerTx", it); showPtxKb = false },
                     gradientStart = Color(0xFF01D00D), gradientEnd = Color(0xFFC62828)
                 )
             }
@@ -309,20 +309,20 @@ fun SmartInputField(
                     color = surfaceContainerLow
                 ) {
                     Box(Modifier.fillMaxSize().padding(horizontal = 12.dp), contentAlignment = Alignment.CenterStart) {
-                        Text(powerRx.replace("W", ""), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                        Text(powerRx, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
                     }
                 }
                 PowerKeyboard(
-                    value = powerRx.replace("W", ""),
-                    onValueChange = { onFieldChange("powerRx", it + "W") },
+                    value = powerRx,
+                    onValueChange = { onFieldChange("powerRx", it) },
                     visible = showPrxKb,
                     onDone = { showPrxKb = false }
                 )
                 QuickChipRow(
                     items = listOf("5", "10", "50", "100"),
-                    selected = powerRx.replace("W", ""),
+                    selected = powerRx,
                     containerHigh = surfaceContainerHigh,
-                    onSelect = { onFieldChange("powerRx", it + "W"); showPrxKb = false },
+                    onSelect = { onFieldChange("powerRx", it); showPrxKb = false },
                     gradientStart = Color(0xFF01D00D), gradientEnd = Color(0xFFC62828)
                 )
             }

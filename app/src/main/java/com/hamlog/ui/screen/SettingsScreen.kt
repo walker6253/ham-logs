@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.Manifest
+import android.os.Build
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -54,6 +55,8 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -77,6 +80,11 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import android.widget.Toast
+import java.io.File
+import java.net.URL
+import java.net.HttpURLConnection
+import android.os.Environment
+import androidx.core.content.FileProvider
 import com.hamlog.util.CloudlogSync
 import com.hamlog.util.StationInfo
 import org.json.JSONArray
@@ -267,6 +275,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     var showUpdateDialog by remember { mutableStateOf(false) }
     var updateInfo by remember { mutableStateOf<com.hamlog.util.UpdateInfo?>(null) }
     var isCheckingUpdate by remember { mutableStateOf(false) }
+    var downloadingProgress by remember { mutableStateOf<Float?>(null) }
+    var isDownloadingUpdate by remember { mutableStateOf(false) }
     val updateScope = rememberCoroutineScope()
     val adifPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -970,6 +980,160 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 Spacer(Modifier.height(12.dp))
             }
         }
+    }
+
+    // Update check dialog
+    if (showUpdateDialog && updateInfo != null) {
+        val info = updateInfo!!
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    if (info.hasUpdate) "发现新版本" else "已是最新版本",
+                    fontWeight = FontWeight.SemiBold
+                )
+            },
+            text = {
+                Column {
+                    if (isDownloadingUpdate) {
+                        Text(
+                            "正在下载 v${info.latestVersion}...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        if (downloadingProgress != null && downloadingProgress!! >= 0f) {
+                            LinearProgressIndicator(
+                                progress = { downloadingProgress!! },
+                                modifier = Modifier.fillMaxWidth().height(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                "${(downloadingProgress!! * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth().height(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                        }
+                    } else {
+                        Text(
+                            "当前版本: ${info.currentVersion}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        if (info.hasUpdate) {
+                            Text(
+                                "最新版本: ${info.latestVersion}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (info.body.isNotBlank()) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    info.body.take(300),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 10
+                                )
+                            }
+                        } else {
+                            Text(
+                                "没有可用的更新",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (info.hasUpdate && info.apkDownloadUrl.isNotBlank() && !isDownloadingUpdate) {
+                    TextButton(onClick = {
+                        isDownloadingUpdate = true
+                        downloadingProgress = 0f
+                        updateScope.launch {
+                            try {
+                                val apkFile = withContext(Dispatchers.IO) {
+                                    val file = File(context.cacheDir, "hamlog_update.apk")
+                                    if (file.exists()) file.delete()
+                                    val url = URL(info.apkDownloadUrl)
+                                    val conn = url.openConnection() as HttpURLConnection
+                                    conn.connectTimeout = 15000
+                                    conn.readTimeout = 60000
+                                    val totalBytes = conn.contentLength.toLong()
+                                    var downloaded = 0L
+                                    conn.inputStream.use { input ->
+                                        file.outputStream().use { output ->
+                                            val buffer = ByteArray(8192)
+                                            var bytesRead = input.read(buffer)
+                                            while (bytesRead != -1) {
+                                                output.write(buffer, 0, bytesRead)
+                                                downloaded += bytesRead
+                                                downloadingProgress = if (totalBytes > 0) {
+                                                    (downloaded.toFloat() / totalBytes).coerceIn(0f, 1f)
+                                                } else -1f
+                                                bytesRead = input.read(buffer)
+                                            }
+                                        }
+                                    }
+                                    conn.disconnect()
+                                    file
+                                }
+                                val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
+                                } else {
+                                    android.net.Uri.fromFile(apkFile)
+                                }
+                                val install = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(uri, "application/vnd.android.package-archive")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(install)
+                                showUpdateDialog = false
+                                isDownloadingUpdate = false
+                                downloadingProgress = null
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_LONG).show()
+                                isDownloadingUpdate = false
+                                downloadingProgress = null
+                            }
+                        }
+                    }) {
+                        Text("直接更新")
+                    }
+                } else if (info.hasUpdate) {
+                    val uriHandler = LocalUriHandler.current
+                    TextButton(onClick = {
+                        showUpdateDialog = false
+                        uriHandler.openUri(info.releaseUrl)
+                    }) {
+                        Text("前往下载")
+                    }
+                } else {
+                    TextButton(onClick = { showUpdateDialog = false }) {
+                        Text("确定")
+                    }
+                }
+            },
+            dismissButton = {
+                if (!isDownloadingUpdate) {
+                    TextButton(onClick = { showUpdateDialog = false }) {
+                        Text("关闭")
+                    }
+                }
+            }
+        )
     }
 }
 
