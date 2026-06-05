@@ -88,9 +88,14 @@ fun <T> DragReorderableColumn(
     val itemHeight = 36.dp
     val itemHeightPx = with(LocalDensity.current) { itemHeight.toPx() }
 
+    val targetIndex = if (draggedIndex != null) {
+        (draggedItemStartIndex + (dragOffset / itemHeightPx).roundToInt()).coerceIn(0, items.lastIndex)
+    } else -1
+
     Column(modifier) {
         items.forEachIndexed { index, item ->
             val isDragging = draggedIndex == index
+            val isTargetSlot = !isDragging && draggedIndex != null && index == targetIndex
             Box(
                 Modifier
                     .zIndex(if (isDragging) 1f else 0f)
@@ -127,7 +132,21 @@ fun <T> DragReorderableColumn(
                         )
                     }
             ) {
-                itemContent(item, index)
+                Column {
+                    if (isTargetSlot && targetIndex < draggedItemStartIndex) {
+                        // Show gap above target
+                        Box(Modifier.fillMaxWidth().height(itemHeight).padding(horizontal=4.dp).graphicsLayer { alpha = 0.3f }) {
+                            Surface(Modifier.fillMaxSize(), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primary) {}
+                        }
+                    }
+                    itemContent(item, index)
+                    if (isTargetSlot && targetIndex > draggedItemStartIndex) {
+                        // Show gap below target
+                        Box(Modifier.fillMaxWidth().height(itemHeight).padding(horizontal=4.dp).graphicsLayer { alpha = 0.3f }) {
+                            Surface(Modifier.fillMaxSize(), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primary) {}
+                        }
+                    }
+                }
             }
         }
     }
