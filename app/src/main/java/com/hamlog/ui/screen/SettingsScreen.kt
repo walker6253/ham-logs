@@ -348,6 +348,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
+                modifier = Modifier.height(48.dp),
                     title = {
                         Text(
                             "\u8bbe\u7f6e",
@@ -956,24 +957,32 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 Spacer(Modifier.height(4.dp))
                 // Footer
                 val uriHandler = LocalUriHandler.current
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Designed by BI9BRH",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_github),
+                            contentDescription = "GitHub",
+                            modifier = Modifier.size(14.dp).clickable {
+                                uriHandler.openUri("https://github.com/walker6253/ham-logs")
+                            },
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        )
+                    }
                     Text(
-                        "Designed by BI9BRH",
+                        "Contributors: BI9CGB",
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_github),
-                        contentDescription = "GitHub",
-                        modifier = Modifier.size(14.dp).clickable {
-                            uriHandler.openUri("https://github.com/walker6253/ham-logs")
-                        },
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                     )
                 }
 

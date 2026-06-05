@@ -64,6 +64,7 @@ fun StatsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                modifier = Modifier.height(48.dp),
                 title = {
                     Text(
                         "通联统计",

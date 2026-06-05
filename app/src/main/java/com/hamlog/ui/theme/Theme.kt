@@ -169,6 +169,7 @@ fun HamLogTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable
         val statusBarColor = colorScheme.background
         SideEffect {
             val window = (view.context as android.app.Activity).window
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
             window.statusBarColor = statusBarColor.toArgb()
             window.navigationBarColor = statusBarColor.toArgb()
             val insetsController = WindowCompat.getInsetsController(window, view)
