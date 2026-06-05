@@ -55,6 +55,7 @@ fun LogEntryScreen(
         WindowWidthSizeClass.Medium -> 16.dp
         else -> 12.dp
     }
+    val isWide = widthClass != WindowWidthSizeClass.Compact
     val uiState by viewModel.uiState.collectAsState()
     LaunchedEffect(dateEpochDay) { viewModel.init(dateEpochDay) }
 
@@ -219,97 +220,201 @@ fun LogEntryScreen(
                 )
             }
         ) { padding ->
-            Column(Modifier.fillMaxSize().padding(padding)) {
-                // Input Section
-                Column(Modifier.weight(0.6f)) {
-                    Box(Modifier.weight(1f)) {
-                        Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
-                            SmartInputField(
-                                smartInput = uiState.smartInput, callsign = uiState.callsign,
-                                frequency = uiState.frequency, mode = uiState.mode,
-                                rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
-                                powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
-                                suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
-                                onInputChange = { viewModel.onSmartInputChanged(it) },
-                                onFieldChange = { f, v -> viewModel.updateField(f, v) },
-                                onCommitNext = { viewModel.commitNext() },
-                                onSave = { viewModel.saveContact() },
-                                qsoTime = uiState.qsoTime,
-                                onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
-                                onDismissSuggestions = { viewModel.dismissSuggestions() },
-                                dismissKeyboards = uiState.dismissKeyboards
-                            )
-                        }
-                    }
-                    Button(
-                        onClick = { viewModel.saveContact() },
-                        enabled = uiState.callsign.isNotBlank(),
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
-                        shape = MaterialTheme.shapes.small,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) { Text("保存通联", fontWeight = FontWeight.Medium) }
-                }
-
-                HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
-
-                // Contact List Section
-                Column(Modifier.weight(0.4f)) {
-                    val title = if (isHistorical) "历史  ${uiState.searchCallsign}" else "今日通联"
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(title, style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                        if (!isHistorical) {
-                            Text("${displayContacts.size} 条", style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                    if (displayContacts.isEmpty()) {
-                        Box(Modifier.fillMaxSize(), Alignment.Center) {
-                            Text(if (isHistorical) "无历史记录" else "暂无记录", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
-                        }
-                    } else {
-                        LazyColumn(
-                            Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(displayContacts, key = { it.id }) { c ->
-                                val dismissState = rememberSwipeToDismissBoxState(
-                                    confirmValueChange = {
-                                        if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
-                                            viewModel.requestDelete(c)
-                                        }
-                                        false
-                                    }
+            if (isWide) {
+                Row(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                ) {
+                    // Input Section (left, ~55%)
+                    Column(Modifier.weight(0.55f).fillMaxHeight()) {
+                        Box(Modifier.weight(1f)) {
+                            Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
+                                SmartInputField(
+                                    smartInput = uiState.smartInput, callsign = uiState.callsign,
+                                    frequency = uiState.frequency, mode = uiState.mode,
+                                    rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
+                                    powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
+                                    suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
+                                    onInputChange = { viewModel.onSmartInputChanged(it) },
+                                    onFieldChange = { f, v -> viewModel.updateField(f, v) },
+                                    onCommitNext = { viewModel.commitNext() },
+                                    onSave = { viewModel.saveContact() },
+                                    qsoTime = uiState.qsoTime,
+                                    onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
+                                    onDismissSuggestions = { viewModel.dismissSuggestions() },
+                                    dismissKeyboards = uiState.dismissKeyboards
                                 )
-                                SwipeToDismissBox(
-                                    state = dismissState,
-                                    backgroundContent = {
-                                    Row(
-                                        Modifier.fillMaxSize().padding(horizontal = 20.dp),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.CenterVertically
+                            }
+                        }
+                        Button(
+                            onClick = { viewModel.saveContact() },
+                            enabled = uiState.callsign.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
+                            shape = MaterialTheme.shapes.small,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) { Text("保存通联", fontWeight = FontWeight.Medium) }
+                    }
+
+                    VerticalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+                    // Contact List Section (right, ~45%)
+                    Column(Modifier.weight(0.45f).fillMaxHeight()) {
+                        val title = if (isHistorical) "历史  ${uiState.searchCallsign}" else "今日通联"
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            if (!isHistorical) {
+                                Text("${displayContacts.size} 条", style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (displayContacts.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                                Text(if (isHistorical) "无历史记录" else "暂无记录", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            }
+                        } else {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(displayContacts, key = { it.id }) { c ->
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = {
+                                            if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                                viewModel.requestDelete(c)
+                                            }
+                                            false
+                                        }
+                                    )
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {
+                                            Row(
+                                                Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "删除",
+                                                    tint = Color(0xFFFF4444),
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                                Icon(
+                                                    Icons.Default.Delete,
+                                                    contentDescription = "删除",
+                                                    tint = Color(0xFFFF4444),
+                                                    modifier = Modifier.size(28.dp)
+                                                )
+                                            }
+                                        },
+                                        enableDismissFromStartToEnd = true,
+                                        enableDismissFromEndToStart = true
                                     ) {
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "删除",
-                                            tint = Color(0xFFFF4444),
-                                            modifier = Modifier.size(28.dp)
-                                        )
-                                        Icon(
-                                            Icons.Default.Delete,
-                                            contentDescription = "删除",
-                                            tint = Color(0xFFFF4444),
-                                            modifier = Modifier.size(28.dp)
-                                        )
+                                        ContactListItem(c, { viewModel.requestDelete(c) }, tz, { editingContact = c })
                                     }
-                                },
-                                    enableDismissFromStartToEnd = true,
-                                    enableDismissFromEndToStart = true
-                                ) {
-                                    ContactListItem(c, { viewModel.requestDelete(c) }, tz, { editingContact = c })
+                                }
+                            }
+                        }
+                    }
+                }
+            } else {
+                Column(Modifier.fillMaxSize().padding(padding)) {
+                    // Input Section
+                    Column(Modifier.weight(0.6f)) {
+                        Box(Modifier.weight(1f)) {
+                            Column(Modifier.fillMaxSize().padding(horizontal = hPadding, vertical = 6.dp)) {
+                                SmartInputField(
+                                    smartInput = uiState.smartInput, callsign = uiState.callsign,
+                                    frequency = uiState.frequency, mode = uiState.mode,
+                                    rstSent = uiState.rstSent, rstReceived = uiState.rstReceived,
+                                    powerTx = uiState.powerTx, powerRx = uiState.powerRx, notes = uiState.notes,
+                                    suggestions = uiState.callsignSuggestions, showSuggestions = uiState.showSuggestions,
+                                    onInputChange = { viewModel.onSmartInputChanged(it) },
+                                    onFieldChange = { f, v -> viewModel.updateField(f, v) },
+                                    onCommitNext = { viewModel.commitNext() },
+                                    onSave = { viewModel.saveContact() },
+                                    qsoTime = uiState.qsoTime,
+                                    onSelectSuggestion = { viewModel.selectCallsignSuggestion(it) },
+                                    onDismissSuggestions = { viewModel.dismissSuggestions() },
+                                    dismissKeyboards = uiState.dismissKeyboards
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = { viewModel.saveContact() },
+                            enabled = uiState.callsign.isNotBlank(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 6.dp),
+                            shape = MaterialTheme.shapes.small,
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                        ) { Text("保存通联", fontWeight = FontWeight.Medium) }
+                    }
+
+                    HorizontalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)
+
+                    // Contact List Section
+                    Column(Modifier.weight(0.4f)) {
+                        val title = if (isHistorical) "历史  ${uiState.searchCallsign}" else "今日通联"
+                        Row(
+                            Modifier.fillMaxWidth().padding(horizontal = hPadding, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(title, style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif, fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+                            if (!isHistorical) {
+                                Text("${displayContacts.size} 条", style = MaterialTheme.typography.labelSmall, fontFamily = NotoSerif, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (displayContacts.isEmpty()) {
+                            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                                Text(if (isHistorical) "无历史记录" else "暂无记录", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
+                            }
+                        } else {
+                            LazyColumn(
+                                Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                items(displayContacts, key = { it.id }) { c ->
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = {
+                                            if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                                viewModel.requestDelete(c)
+                                            }
+                                            false
+                                        }
+                                    )
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {
+                                        Row(
+                                            Modifier.fillMaxSize().padding(horizontal = 20.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "删除",
+                                                tint = Color(0xFFFF4444),
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                            Icon(
+                                                Icons.Default.Delete,
+                                                contentDescription = "删除",
+                                                tint = Color(0xFFFF4444),
+                                                modifier = Modifier.size(28.dp)
+                                            )
+                                        }
+                                    },
+                                        enableDismissFromStartToEnd = true,
+                                        enableDismissFromEndToStart = true
+                                    ) {
+                                        ContactListItem(c, { viewModel.requestDelete(c) }, tz, { editingContact = c })
+                                    }
                                 }
                             }
                         }
