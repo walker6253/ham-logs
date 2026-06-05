@@ -117,11 +117,16 @@ fun MainScreen(
                             downloadingProgress = 0f
                             scope.launch {
                                 try {
-                                    val apkFile = java.io.File(context.cacheDir, "update.apk")
+                                    // Remove old update files
+                                    context.cacheDir.listFiles()?.filter { it.name.startsWith("update-") }?.forEach { it.delete() }
+                                    val apkFile = java.io.File(context.cacheDir, "update-v${info.latestVersion}.apk")
+                                    apkFile.delete()
                                     val url = java.net.URL(info.apkDownloadUrl)
                                     val conn = url.openConnection() as java.net.HttpURLConnection
                                     conn.connectTimeout = 30000
                                     conn.readTimeout = 30000
+                                    conn.setRequestProperty("Cache-Control", "no-cache")
+                                    conn.useCaches = false
                                     conn.connect()
                                     val total = conn.contentLength.toLong()
                                     var downloaded = 0L
@@ -137,6 +142,7 @@ fun MainScreen(
                                             }
                                         }
                                     }
+                                    android.util.Log.d("UpdateChecker", "Downloaded: ${apkFile.absolutePath}, size=${apkFile.length()}, expected=$total")
                                     val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
                                     val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
                                     intent.setDataAndType(uri, "application/vnd.android.package-archive")
