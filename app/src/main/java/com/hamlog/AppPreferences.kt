@@ -25,6 +25,8 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
         _stationProfileId.value = p.getString("stationProfileId", "1") ?: "1"
         _stationListJson.value = p.getString("stationListJson", "[]") ?: "[]"
         _autoUploadEnabled.value = p.getBoolean("autoUploadEnabled", false)
+        _lastUpdateCheckDate.value = p.getString("lastUpdateCheckDate", "") ?: ""
+        _updateIgnoredDate.value = p.getString("updateIgnoredDate", "") ?: ""
     }
 
     private val _timezone = MutableStateFlow(ZoneId.of("Asia/Shanghai"))
@@ -58,6 +60,12 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
 
     private val _autoUploadEnabled = MutableStateFlow(false)
     val autoUploadEnabled: StateFlow<Boolean> = _autoUploadEnabled.asStateFlow()
+
+    private val _lastUpdateCheckDate = MutableStateFlow("")
+    val lastUpdateCheckDate: StateFlow<String> = _lastUpdateCheckDate.asStateFlow()
+
+    private val _updateIgnoredDate = MutableStateFlow("")
+    val updateIgnoredDate: StateFlow<String> = _updateIgnoredDate.asStateFlow()
 
 
     fun setTimezone(zoneId: ZoneId) {
@@ -113,5 +121,15 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
     fun setGridSquare(grid: String) {
         _gridSquare.value = grid.trim()
         prefs?.edit()?.putString("gridSquare", _gridSquare.value)?.apply()
+    }
+
+    fun setLastUpdateCheckDate(date: String) {
+        _lastUpdateCheckDate.value = date
+        prefs?.edit()?.putString("lastUpdateCheckDate", date)?.apply()
+    }
+
+    fun setUpdateIgnoredDate(date: String) {
+        _updateIgnoredDate.value = date
+        prefs?.edit()?.putString("updateIgnoredDate", date)?.apply()
     }
 }
