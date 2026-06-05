@@ -1,0 +1,623 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="HAM 日志 — 一款面向业余无线电爱好者的 Android 通联日志应用。支持快速录入、ADIF 导入导出、Cloudlog 云端同步。">
+<meta name="theme-color" content="#0a0a0f">
+<title>HAM 日志 — 业余无线电通联日志</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #08080e;
+    --bg-surface: #101218;
+    --bg-card: #161a22;
+    --bg-card-hover: #1c2130;
+    --amber: #f0a030;
+    --amber-glow: #f0a03066;
+    --green-signal: #4ade80;
+    --green-dim: #22c55e44;
+    --red-signal: #ef4444;
+    --text-primary: #e8e6e3;
+    --text-secondary: #989691;
+    --text-muted: #5c5a55;
+    --border-subtle: #ffffff0a;
+    --border-card: #ffffff0d;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: "Noto Sans SC", system-ui, sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+  }
+
+  /* Grid lines background */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(240,160,48,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(240,160,48,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 70%);
+  }
+
+  /* Scanline */
+  .scanline {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.015) 2px,
+      rgba(0,0,0,0.015) 4px
+    );
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ===== NAV ===== */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    padding: 16px 0;
+    background: linear-gradient(180deg, var(--bg-deep) 60%, transparent);
+    backdrop-filter: blur(12px);
+  }
+  .nav-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: "Share Tech Mono", monospace;
+    font-size: 1.1rem;
+    color: var(--amber);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+  }
+  .nav-logo .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green-signal);
+    box-shadow: 0 0 8px var(--green-signal);
+    animation: blink 2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .nav-links { display: flex; gap: 28px; list-style: none; align-items: center; }
+  .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .nav-links a:hover { color: var(--amber); }
+  .nav-gh {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: all 0.25s;
+  }
+  .nav-gh:hover { border-color: var(--amber); color: var(--amber); }
+
+  /* ===== HERO ===== */
+  .hero {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+    overflow: hidden;
+  }
+
+  /* Radio wave rings */
+  .wave-rings {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .wave-ring {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 1px solid var(--amber-glow);
+    animation: waveExpand 4s ease-out infinite;
+  }
+  .wave-ring:nth-child(1) { animation-delay: 0s; }
+  .wave-ring:nth-child(2) { animation-delay: 0.8s; }
+  .wave-ring:nth-child(3) { animation-delay: 1.6s; }
+  .wave-ring:nth-child(4) { animation-delay: 2.4s; }
+  .wave-ring:nth-child(5) { animation-delay: 3.2s; }
+  @keyframes waveExpand {
+    0% { width: 40px; height: 40px; opacity: 0.6; }
+    100% { width: 600px; height: 600px; opacity: 0; }
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 16px;
+    border: 1px solid rgba(240,160,48,0.2);
+    border-radius: 100px;
+    font-size: 0.8rem;
+    color: var(--amber);
+    font-family: "Share Tech Mono", monospace;
+    letter-spacing: 0.08em;
+    margin-bottom: 32px;
+  }
+  .hero-badge .pulse {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green-signal);
+    box-shadow: 0 0 6px var(--green-signal);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 6px var(--green-signal)} 50%{box-shadow:0 0 16px var(--green-signal)} }
+
+  .hero-title {
+    font-family: "Noto Serif SC", serif;
+    font-size: clamp(2.6rem, 6vw, 5rem);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    margin-bottom: 20px;
+  }
+  .hero-title .accent { color: var(--amber); }
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: var(--text-secondary);
+    max-width: 480px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+  }
+
+  /* Signal meter */
+  .signal-meter {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 48px;
+    margin-bottom: 48px;
+  }
+  .signal-bar {
+    width: 8px;
+    border-radius: 2px 2px 0 0;
+    background: var(--green-signal);
+    animation: meterBounce 1.2s ease-in-out infinite alternate;
+  }
+  .signal-bar:nth-child(1) { height: 14px; animation-delay: 0s; }
+  .signal-bar:nth-child(2) { height: 20px; animation-delay: 0.1s; }
+  .signal-bar:nth-child(3) { height: 26px; animation-delay: 0.2s; }
+  .signal-bar:nth-child(4) { height: 32px; animation-delay: 0.3s; }
+  .signal-bar:nth-child(5) { height: 28px; animation-delay: 0.4s; background: var(--amber); }
+  .signal-bar:nth-child(6) { height: 34px; animation-delay: 0.5s; background: var(--amber); }
+  .signal-bar:nth-child(7) { height: 40px; animation-delay: 0.6s; background: var(--amber); }
+  .signal-bar:nth-child(8) { height: 38px; animation-delay: 0.7s; background: var(--red-signal); }
+  .signal-bar:nth-child(9) { height: 44px; animation-delay: 0.8s; background: var(--red-signal); }
+  .signal-bar:nth-child(10) { height: 48px; animation-delay: 0.9s; background: var(--red-signal); }
+  @keyframes meterBounce {
+    0% { transform: scaleY(0.7); }
+    100% { transform: scaleY(1); }
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: var(--radius-sm);
+    font-family: "Share Tech Mono", monospace;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    transition: all 0.3s;
+    cursor: pointer;
+    border: none;
+  }
+  .btn-primary {
+    background: var(--amber);
+    color: #0a0a0f;
+    font-weight: 700;
+    box-shadow: 0 0 30px rgba(240,160,48,0.2);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 50px rgba(240,160,48,0.35);
+    transform: translateY(-2px);
+  }
+  .btn-outline {
+    border: 1px solid var(--border-card);
+    color: var(--text-primary);
+    background: transparent;
+  }
+  .btn-outline:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(240,160,48,0.05);
+  }
+
+  /* ===== SECTIONS ===== */
+  .section {
+    position: relative;
+    z-index: 1;
+    padding: 100px 0;
+  }
+  .section-label {
+    font-family: "Share Tech Mono", monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .section-title {
+    font-family: "Noto Serif SC", serif;
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    line-height: 1.3;
+    margin-bottom: 14px;
+  }
+  .section-desc {
+    color: var(--text-secondary);
+    max-width: 540px;
+    margin-bottom: 48px;
+    font-size: 0.95rem;
+  }
+
+  /* Features grid */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-md);
+    padding: 28px 24px;
+    transition: all 0.35s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--amber), transparent);
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+  .feature-card:hover {
+    background: var(--bg-card-hover);
+    border-color: #ffffff14;
+    transform: translateY(-3px);
+  }
+  .feature-card:hover::before { opacity: 1; }
+  .feature-icon {
+    font-size: 1.6rem;
+    margin-bottom: 16px;
+    display: block;
+  }
+  .feature-card h3 {
+    font-family: "Noto Serif SC", serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+  .feature-card p {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* Mode tags showcase */
+  .mode-showcase {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 32px 0 48px;
+  }
+  .mode-tag {
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-family: "Share Tech Mono", monospace;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+  }
+  .mode-usb { background: #22c55e22; color: #4ade80; border: 1px solid #22c55e33; }
+  .mode-lsb { background: #f9731622; color: #fb923c; border: 1px solid #f9731633; }
+  .mode-fm  { background: #ef444422; color: #f87171; border: 1px solid #ef444433; }
+  .mode-cw  { background: #a78bfa22; color: #a78bfa; border: 1px solid #a78bfa33; }
+  .mode-ft8 { background: #2dd4bf22; color: #2dd4bf; border: 1px solid #2dd4bf33; }
+
+  /* Tech stack */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+  }
+  .tech-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-family: "Share Tech Mono", monospace;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    transition: all 0.25s;
+  }
+  .tech-item:hover {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .tech-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    background: var(--amber);
+    flex-shrink: 0;
+  }
+
+  /* Footer */
+  .footer {
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--border-subtle);
+    padding: 40px 0;
+    text-align: center;
+  }
+  .footer-grid-coord {
+    font-family: "Share Tech Mono", monospace;
+    font-size: 1.4rem;
+    letter-spacing: 0.1em;
+    color: var(--amber);
+    margin-bottom: 12px;
+  }
+  .footer-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+  .footer-text a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-text a:hover { color: var(--amber); }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .nav-links { display: none; }
+    .hero { padding: 100px 16px 60px; }
+    .section { padding: 64px 0; }
+    .features-grid { grid-template-columns: 1fr; }
+    .tech-grid { grid-template-columns: 1fr 1fr; }
+    .hero-actions { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <span class="dot"></span> HAM LOGS
+    </a>
+    <ul class="nav-links">
+      <li><a href="#features">功能</a></li>
+      <li><a href="#tech">技术栈</a></li>
+      <li>
+        <a href="https://github.com/walker6253/ham-logs" class="nav-gh" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
+        </a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="wave-rings">
+    <div class="wave-ring"></div>
+    <div class="wave-ring"></div>
+    <div class="wave-ring"></div>
+    <div class="wave-ring"></div>
+    <div class="wave-ring"></div>
+  </div>
+
+  <div class="hero-badge">
+    <span class="pulse"></span> ANDROID · KOTLIN · COMPOSE
+  </div>
+
+  <h1 class="hero-title">
+    HAM<span class="accent">日志</span>
+  </h1>
+  <p class="hero-subtitle">
+    为业余无线电爱好者打造的 Android 通联日志应用 —
+    快速录入、智能检索、ADIF 导入导出、Cloudlog 云端同步
+  </p>
+
+  <div class="signal-meter">
+    <div class="signal-bar"></div><div class="signal-bar"></div><div class="signal-bar"></div>
+    <div class="signal-bar"></div><div class="signal-bar"></div><div class="signal-bar"></div>
+    <div class="signal-bar"></div><div class="signal-bar"></div><div class="signal-bar"></div>
+    <div class="signal-bar"></div>
+  </div>
+
+  <div class="hero-actions">
+    <a href="https://github.com/walker6253/ham-logs/releases" class="btn btn-primary" target="_blank" rel="noopener">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      下载 APK
+    </a>
+    <a href="https://github.com/walker6253/ham-logs" class="btn btn-outline" target="_blank" rel="noopener">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      查看源码
+    </a>
+  </div>
+</section>
+
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-label">// 功能特性</div>
+    <h2 class="section-title">专为通联设计的<br>完整工具链</h2>
+    <p class="section-desc">
+      从快速录入到云端同步，覆盖通联日志的每一个环节。
+    </p>
+
+    <div class="mode-showcase">
+      <span class="mode-tag mode-usb">USB</span>
+      <span class="mode-tag mode-lsb">LSB</span>
+      <span class="mode-tag mode-fm">FM</span>
+      <span class="mode-tag mode-cw">CW</span>
+      <span class="mode-tag mode-ft8">FT8</span>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">📻</span>
+        <h3>通联日志</h3>
+        <p>按日期分组卡片式展示，模式彩色标签，左右滑动快速删除，呼号自动联想与大写转换</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📝</span>
+        <h3>智能录入</h3>
+        <p>自定义 RST 数字键盘、功率键盘、快捷标签，支持一次性输入自动解析填充</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📍</span>
+        <h3>位置与网格</h3>
+        <p>自动获取 GPS 位置并计算梅登海德网格坐标，B 台分区自动识别省份</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📤</span>
+        <h3>ADIF 导入导出</h3>
+        <p>标准 ADIF 格式支持，自动解析日期创建对应通联记录</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">☁️</span>
+        <h3>Cloudlog 同步</h3>
+        <p>连接 Cloudlog 站台，ADIF 格式上传 QSO，自动上传开关，同步结果详情</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📡</span>
+        <h3>设备天馈管理</h3>
+        <p>天线品牌型号分组管理，长按拖拽排序，左右滑动删除</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🌙</span>
+        <h3>深色模式</h3>
+        <p>完整 Material 3 深色主题，WindowSizeClass 自适应屏幕尺寸</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⏱️</span>
+        <h3>时区与设置</h3>
+        <p>默认 UTC+8，可切换时区，OP 信息配置，检查 GitHub Release 更新</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="tech">
+  <div class="container">
+    <div class="section-label">// 技术架构</div>
+    <h2 class="section-title">现代 Android<br>技术栈</h2>
+    <p class="section-desc">
+      采用 Jetpack Compose + Material 3 + MVVM 架构，基于 Kotlin 构建。
+    </p>
+
+    <div class="tech-grid">
+      <div class="tech-item"><span class="tech-dot"></span>Kotlin</div>
+      <div class="tech-item"><span class="tech-dot"></span>Jetpack Compose</div>
+      <div class="tech-item"><span class="tech-dot"></span>Material 3</div>
+      <div class="tech-item"><span class="tech-dot"></span>MVVM 架构</div>
+      <div class="tech-item"><span class="tech-dot"></span>Room 数据库</div>
+      <div class="tech-item"><span class="tech-dot"></span>StateFlow</div>
+      <div class="tech-item"><span class="tech-dot"></span>Gradle KTS</div>
+      <div class="tech-item"><span class="tech-dot"></span>JDK 17</div>
+      <div class="tech-item"><span class="tech-dot"></span>minSdk 26</div>
+      <div class="tech-item"><span class="tech-dot"></span>Noto Serif</div>
+      <div class="tech-item"><span class="tech-dot"></span>Space Grotesk</div>
+      <div class="tech-item"><span class="tech-dot"></span>GPS / 网格</div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <p class="footer-text">
+      HAM 日志 © 2024–2026 · 
+      <a href="https://github.com/walker6253/ham-logs" target="_blank" rel="noopener">walker6253/ham-logs</a> · 
+      <a href="https://github.com/walker6253/ham-logs/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+    </p>
+  </div>
+</footer>
+</body>
+</html>
