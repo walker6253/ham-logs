@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.navigation
+package com.hamlog.ui.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -21,13 +21,21 @@ import androidx.navigation.navArgument
 import com.hamlog.ui.screen.LogEntryScreen
 import com.hamlog.ui.screen.MainScreen
 import com.hamlog.ui.screen.SettingsScreen
+import com.hamlog.ui.screen.StatsScreen
 import com.hamlog.viewmodel.LogEntryViewModel
 import com.hamlog.viewmodel.MainViewModel
 import com.hamlog.viewmodel.SettingsViewModel
+import com.hamlog.viewmodel.StatsViewModel
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     data object Main : Screen("main", "日志", Icons.Default.DateRange)
     data object Settings : Screen("settings", "设置", Icons.Default.Settings)
+}
+
+private object Routes {
+    const val STATS = "stats"
+    const val LOG = "log/{dateEpochDay}"
+    fun log(dateEpochDay: Long) = "log/$dateEpochDay"
 }
 
 val bottomNavItems = listOf(Screen.Main, Screen.Settings)
@@ -129,12 +137,13 @@ fun NavGraph() {
                 val vm: MainViewModel = viewModel()
                 MainScreen(
                     vm,
-                    onNavigateToLog = { navController.navigate("log/$it") },
-                    onNavigateToSettings = {}
+                    onNavigateToLog = { navController.navigate(Routes.log(it)) },
+                    onNavigateToSettings = {},
+                    onNavigateToStats = { navController.navigate(Routes.STATS) }
                 )
             }
             composable(
-                "log/{dateEpochDay}",
+                Routes.LOG,
                 arguments = listOf(navArgument("dateEpochDay") { type = NavType.LongType })
             ) { entry ->
                 val date = entry.arguments?.getLong("dateEpochDay") ?: return@composable
@@ -144,6 +153,10 @@ fun NavGraph() {
             composable(Screen.Settings.route) {
                 val vm: SettingsViewModel = viewModel()
                 SettingsScreen(vm)
+            }
+            composable(Routes.STATS) {
+                val vm: StatsViewModel = viewModel()
+                StatsScreen(vm, onNavigateBack = { navController.popBackStack() })
             }
         }
     }

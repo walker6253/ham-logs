@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,7 +37,8 @@ import com.hamlog.ui.component.AlxDatePickerDialog
 fun MainScreen(
     viewModel: MainViewModel,
     onNavigateToLog: (Long) -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToStats: () -> Unit
 ) {
     val widthClass = LocalWindowSizeClass.current
     val hPadding = when (widthClass) {
@@ -63,6 +65,15 @@ fun MainScreen(
                         style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif),
                         fontWeight = FontWeight.Bold
                     )
+                },
+                actions = {
+                    IconButton(onClick = onNavigateToStats) {
+                        Icon(
+                            Icons.Filled.BarChart,
+                            contentDescription = "统计",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
