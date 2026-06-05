@@ -504,9 +504,18 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Spacer(Modifier.height(12.dp))
                         Text("设备",style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(4.dp))
-                        rigList.forEach { cat ->
+                        DragReorderableColumn(
+                            items = rigList.toList(),
+                            onMove = { from, to ->
+                                EquipmentManager.moveRigBrand(from, to)
+                                refreshEquipment()
+                            }
+                        ) { cat, _ ->
                             Column(Modifier.padding(bottom=6.dp)) {
-                                Text(cat.brand, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(vertical=2.dp))
+                                Row(Modifier.fillMaxWidth().height(28.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                    Text(cat.brand, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
+                                }
                                 DragReorderableColumn(
                                     items = cat.models,
                                     onMove = { from, to ->
@@ -542,7 +551,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Cloud, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("Cloudlog 同步", style = MaterialTheme.typography.titleSmall)
+                            Text("Cloudlog 同步设置", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         Text("API 地址", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
