@@ -40,15 +40,20 @@ object CloudlogSync {
     }
 
     private fun formatDate(epochMs: Long): String {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        val sdf = SimpleDateFormat("yyyyMMdd", Locale.US)
         sdf.timeZone = TimeZone.getTimeZone("UTC")
         return sdf.format(Date(epochMs))
     }
 
     private fun formatTime(epochMs: Long): String {
-        val sdf = SimpleDateFormat("HH:mm", Locale.US)
+        val sdf = SimpleDateFormat("HHmmss", Locale.US)
         sdf.timeZone = TimeZone.getTimeZone("UTC")
         return sdf.format(Date(epochMs))
+    }
+
+    private fun adifTag(tag: String, value: String): String {
+        if (value.isBlank()) return ""
+        return "<$tag:${value.length}>$value"
     }
 
     suspend fun syncContacts(
@@ -70,22 +75,31 @@ object CloudlogSync {
 
         contacts.forEachIndexed { index, contact ->
             try {
+                val band = frequencyToBand(contact.frequencyMHz)
+                val mode = contact.mode.uppercase().trim()
+                val adifParts = buildString {
+                    append(adifTag("CALL", contact.callsign.uppercase().trim()))
+                    if (band.isNotBlank()) append(adifTag("BAND", band))
+                    append(adifTag("MODE", mode))
+                    append(adifTag("QSO_DATE", formatDate(contact.createdAt)))
+                    append(adifTag("TIME_ON", formatTime(contact.createdAt)))
+                    append(adifTag("RST_SENT", contact.rstSent.trim()))
+                    append(adifTag("RST_RCVD", contact.rstReceived.trim()))
+                    append(adifTag("FREQ", contact.frequencyMHz.toString()))
+                    val txPwr = contact.powerTx.trim().trimEnd('W', 'w').trim()
+                    if (txPwr.isNotBlank()) append(adifTag("TX_PWR", txPwr))
+                    val rxPwr = contact.powerRx.trim().trimEnd('W', 'w').trim()
+                    if (rxPwr.isNotBlank()) append(adifTag("RX_PWR", rxPwr))
+                    if (contact.notes.isNotBlank()) append(adifTag("COMMENT", contact.notes.trim()))
+                    if (gridSquare.isNotBlank()) append(adifTag("GRIDSQUARE", gridSquare))
+                    if (callsign.isNotBlank()) append(adifTag("STATION_CALLSIGN", callsign.uppercase().trim()))
+                    append("<EOR>")
+                }
                 val json = JSONObject().apply {
                     put("key", apiKey)
-                    try { put("station_profile_id", stationProfileId.toInt()) } catch (_: Exception) { put("station_profile_id", 1) }
-                    put("call", contact.callsign.uppercase().trim())
-                    put("band", frequencyToBand(contact.frequencyMHz))
-                    put("mode", contact.mode.uppercase().trim())
-                    put("freq", contact.frequencyMHz.toString())
-                    put("rst_sent", contact.rstSent.trim())
-                    put("rst_rcvd", contact.rstReceived.trim())
-                    if (contact.powerTx.isNotBlank()) put("tx_pwr", contact.powerTx.trim().trimEnd('W', 'w').trim())
-                    if (contact.powerRx.isNotBlank()) put("rx_pwr", contact.powerRx.trim().trimEnd('W', 'w').trim())
-                    if (contact.notes.isNotBlank()) put("comment", contact.notes.trim())
-                    put("qso_date", formatDate(contact.createdAt))
-                    put("time_on", formatTime(contact.createdAt))
-                    if (gridSquare.isNotBlank()) put("gridsquare", gridSquare)
-                    if (callsign.isNotBlank()) put("station_callsign", callsign.uppercase().trim())
+                    put("station_profile_id", stationProfileId)
+                    put("type", "adif")
+                    put("string", adifParts)
                 }
 
                 val connection = URL(url).openConnection() as HttpURLConnection
@@ -125,14 +139,29 @@ object CloudlogSync {
     suspend fun testConnection(baseUrl: String, apiKey: String): ConnectionTestResult = withContext(Dispatchers.IO) {
         try {
             val url = baseUrl.trimEnd('/') + "/index.php/api/qso"
+            val testJson = JSONObject().apply {
+                put("key", apiKey)
+                put("type", "adif")
+                put("string", "<CALL:6>TEST01 <BAND:3>20m <MODE:3>SSB <QSO_DATE:8>20260101 <TIME_ON:6>000000 <RST_SENT:3>599 <RST_RCVD:3>599 <EOR>")
+            }
             val connection = URL(url).openConnection() as HttpURLConnection
-            connection.requestMethod = "GET"
+            connection.requestMethod = "POST"
+            connection.setRequestProperty("Content-Type", "application/json")
             connection.setRequestProperty("Accept", "application/json")
+            connection.doOutput = true
             connection.connectTimeout = 10000
             connection.readTimeout = 10000
+            OutputStreamWriter(connection.outputStream).use { it.write(testJson.toString()) }
             val code = connection.responseCode
+            val respBody = try { connection.inputStream.bufferedReader().use { it.readText() } } catch (_: Exception) { "" }
             connection.disconnect()
-            ConnectionTestResult(code in 200..499, "HTTP $code")
+            if (code in 200..299 && !respBody.contains("failed")) {
+                ConnectionTestResult(true, respBody.take(200))
+            } else if (code in 400..499) {
+                ConnectionTestResult(true, respBody.take(200))
+            } else {
+                ConnectionTestResult(false, "HTTP $code $respBody")
+            }
         } catch (e: Exception) {
             ConnectionTestResult(false, e.message ?: "")
         }

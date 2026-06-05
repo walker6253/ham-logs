@@ -566,10 +566,16 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         title = { Text("同步完成", fontWeight = FontWeight.SemiBold) },
                         text = {
                             Column {
-                                Text("成功: , 失败: ", style = MaterialTheme.typography.bodyMedium)
+                                Text("成功: ${r.success}, 失败: ${r.failed}", style = MaterialTheme.typography.bodyMedium)
+                                if (r.lastResponse.isNotBlank()) {
+                                    Spacer(Modifier.height(6.dp))
+                                    Text("服务器响应:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(r.lastResponse, style = MaterialTheme.typography.bodySmall, maxLines = 4, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
                                 if (r.errors.isNotEmpty()) {
                                     Spacer(Modifier.height(8.dp))
-                                    Text(r.errors.take(5).joinToString("\\n"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, maxLines = 6)
+                                    Text("错误详情:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                    Text(r.errors.take(5).joinToString("\n"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, maxLines = 6)
                                 }
                             }
                         },
