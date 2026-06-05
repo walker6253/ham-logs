@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.screen
+package com.hamlog.ui.screen
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.GridOn
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.GridOn
@@ -42,6 +43,7 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
@@ -74,6 +76,9 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import android.widget.Toast
 import com.hamlog.util.CloudlogSync
+import com.hamlog.util.StationInfo
+import org.json.JSONArray
+import org.json.JSONObject
 
 @Composable
 fun <T> DragReorderableColumn(
@@ -154,6 +159,20 @@ fun <T> DragReorderableColumn(
 
 
 @OptIn(ExperimentalMaterial3Api::class)
+private fun parseStationListJson(json: String): List<StationInfo> {
+    if (json.isBlank() || json == "[]") return emptyList()
+    return try {
+        val arr = JSONArray(json)
+        (0 until arr.length()).map { i ->
+            val obj = arr.getJSONObject(i)
+            StationInfo(
+                stationId = obj.optString("stationId", ""),
+                stationName = obj.optString("stationName", "")
+            )
+        }
+    } catch (_: Exception) { emptyList() }
+}
+
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
     val widthClass = LocalWindowSizeClass.current
@@ -198,9 +217,18 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     LaunchedEffect(autoUploadPref) { autoUploadEnabled = autoUploadPref }
     var isSyncing by remember { mutableStateOf(false) }
     var isTestingConn by remember { mutableStateOf(false) }
+    var testConnResult by remember { mutableStateOf<String?>(null) }
     var syncResult by remember { mutableStateOf<com.hamlog.util.SyncResult?>(null) }
     var showSyncResult by remember { mutableStateOf(false) }
     var syncProgress by remember { mutableStateOf(0 to 0) }
+    var stationDropdownExpanded by remember { mutableStateOf(false) }
+    val stationListJsonPref by AppPreferences.stationListJson.collectAsState()
+    var stationList by remember { mutableStateOf(parseStationListJson(stationListJsonPref)) }
+    LaunchedEffect(stationListJsonPref) {
+        if (stationListJsonPref != "[]") {
+            stationList = parseStationListJson(stationListJsonPref)
+        }
+    }
 
     LaunchedEffect(uiState.exportComplete, uiState.exportUri) {
         if (uiState.exportComplete && uiState.exportUri != null) {
@@ -338,13 +366,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             Spacer(Modifier.width(8.dp))
                             Text("\u547c\u53f7", style = MaterialTheme.typography.titleSmall)
                         }
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "\u8bbe\u7f6e\u540e\u4e3b\u9875\u663e\u793a\u300cXXX \u7684\u901a\u8054\u65e5\u5fd7\u300d",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(12.dp))
                         OutlinedTextField(
                             value = callsignText,
                             onValueChange = { val v = it.uppercase(); callsignText = v; AppPreferences.setCallsign(v.trim()) },
@@ -364,7 +386,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Badge, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u59d3\u540d", style = MaterialTheme.typography.titleSmall)
+                            Text("姓名", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -382,7 +404,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u8bbe\u5907", style = MaterialTheme.typography.titleSmall)
+                            Text("设备", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -400,7 +422,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u4f4d\u7f6e", style = MaterialTheme.typography.titleSmall)
+                            Text("位置", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -456,7 +478,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.GridOn, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u7f51\u683c", style = MaterialTheme.typography.titleSmall)
+                            Text("网格", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -478,7 +500,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Schedule, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.secondary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u65f6\u533a", style = MaterialTheme.typography.titleSmall)
+                            Text("时区", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(10.dp))
                         ExposedDropdownMenuBox(expanded = tzExpanded, onExpandedChange = { tzExpanded = it }) {
@@ -662,15 +684,38 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Spacer(Modifier.height(6.dp))
                         Text("台站 ID", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = stationProfileId,
-                            onValueChange = { stationProfileId = it; AppPreferences.setStationProfileId(it) },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodySmall,
-                            shape = RoundedCornerShape(8.dp),
-                            colors = hamFieldColors()
-                        )
+                        Box {
+                            OutlinedTextField(
+                                value = stationList.firstOrNull { it.stationId == stationProfileId }?.stationName ?: stationProfileId,
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodySmall,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = hamFieldColors(),
+                                trailingIcon = {
+                                    IconButton(onClick = { stationDropdownExpanded = true }) {
+                                        Icon(Icons.Default.KeyboardArrowDown, "展开", Modifier.size(18.dp))
+                                    }
+                                }
+                            )
+                            DropdownMenu(
+                                expanded = stationDropdownExpanded,
+                                onDismissRequest = { stationDropdownExpanded = false }
+                            ) {
+                                stationList.forEach { station ->
+                                    DropdownMenuItem(
+                                        text = { Text(station.stationName + " (" + station.stationId + ")", style = MaterialTheme.typography.bodySmall) },
+                                        onClick = {
+                                            stationProfileId = station.stationId
+                                            AppPreferences.setStationProfileId(station.stationId)
+                                            stationDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
                         Spacer(Modifier.height(4.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                             Text("保存后自动上传", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -685,11 +730,28 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             OutlinedButton(
                                 onClick = {
                                     isTestingConn = true
+                                    testConnResult = null
                                     updateScope.launch {
                                         val res = com.hamlog.util.CloudlogSync.testConnection(cloudlogUrl, cloudlogApiKey)
                                         isTestingConn = false
-                                        val msg = if (res.ok) "连接成功" else "连接失败: "
-                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                        testConnResult = if (res.ok) {
+                                            if (res.ok) {
+                                                try {
+                                                    stationList = com.hamlog.util.CloudlogSync.fetchStationInfo(cloudlogUrl, cloudlogApiKey)
+                                                    val jsonArr = JSONArray()
+                                                    stationList.forEach { s ->
+                                                        jsonArr.put(JSONObject().apply {
+                                                            put("stationId", s.stationId)
+                                                            put("stationName", s.stationName)
+                                                        })
+                                                    }
+                                                    AppPreferences.setStationListJson(jsonArr.toString())
+                                                } catch (_: Exception) { }
+                                            }
+                                            "连接成功"
+                                        } else {
+                                            "失败: " + res.message
+                                        }
                                     }
                                 },
                                 modifier = Modifier.weight(1f).height(40.dp),
@@ -701,7 +763,19 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                     CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
                                     Spacer(Modifier.width(6.dp))
                                 }
-                                Text(if (isTestingConn) "测试中..." else "测试连接", fontSize = 12.sp)
+                                Text(
+                                    when {
+                                        isTestingConn -> "测试中..."
+                                        testConnResult != null -> testConnResult!!
+                                        else -> "测试连接"
+                                    },
+                                    fontSize = 12.sp,
+                                    color = when {
+                                        testConnResult != null && testConnResult!!.startsWith("连接成功") -> Color(0xFF4CAF50)
+                                        testConnResult != null -> Color(0xFFE53935)
+                                        else -> MaterialTheme.colorScheme.primary
+                                    }
+                                )
                             }
                             Button(
                                 onClick = {
@@ -744,7 +818,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                 Text("成功: ${r.success}, 失败: ${r.failed}", style = MaterialTheme.typography.bodyMedium)
                                 if (r.lastResponse.isNotBlank()) {
                                     Spacer(Modifier.height(6.dp))
-                                    Text("服务器响应:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+//                                    Text("服务器响应:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     Text(r.lastResponse, style = MaterialTheme.typography.bodySmall, maxLines = 4, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 if (r.errors.isNotEmpty()) {

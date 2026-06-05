@@ -23,6 +23,7 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
         _cloudlogUrl.value = p.getString("cloudlogUrl", "") ?: ""
         _cloudlogApiKey.value = p.getString("cloudlogApiKey", "") ?: ""
         _stationProfileId.value = p.getString("stationProfileId", "1") ?: "1"
+        _stationListJson.value = p.getString("stationListJson", "[]") ?: "[]"
         _autoUploadEnabled.value = p.getBoolean("autoUploadEnabled", false)
     }
 
@@ -51,6 +52,9 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
 
     private val _stationProfileId = MutableStateFlow("1")
     val stationProfileId: StateFlow<String> = _stationProfileId.asStateFlow()
+
+    private val _stationListJson = MutableStateFlow("[]")
+    val stationListJson: StateFlow<String> = _stationListJson.asStateFlow()
 
     private val _autoUploadEnabled = MutableStateFlow(false)
     val autoUploadEnabled: StateFlow<Boolean> = _autoUploadEnabled.asStateFlow()
@@ -94,6 +98,11 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
     fun setStationProfileId(id: String) {
         _stationProfileId.value = id.trim()
         prefs?.edit()?.putString("stationProfileId", _stationProfileId.value)?.apply()
+    }
+
+    fun setStationListJson(json: String) {
+        _stationListJson.value = json
+        prefs?.edit()?.putString("stationListJson", json)?.apply()
     }
 
     fun setAutoUploadEnabled(enabled: Boolean) {

@@ -12,6 +12,11 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+data class StationInfo(
+    val stationId: String,
+    val stationName: String
+)
+
 data class SyncResult(
     val success: Int = 0,
     val failed: Int = 0,
@@ -132,6 +137,29 @@ object CloudlogSync {
         }
 
         SyncResult(success = success, failed = failed, errors = errors, lastResponse = lastResponseBody)
+    }
+
+    suspend fun fetchStationInfo(baseUrl: String, apiKey: String): List<StationInfo> = withContext(Dispatchers.IO) {
+        try {
+            val url = baseUrl.trimEnd('/') + "/index.php/api/station_info/" + apiKey
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/json")
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+            val respBody = connection.inputStream.bufferedReader().use { it.readText() }
+            connection.disconnect()
+            val arr = org.json.JSONArray(respBody)
+            (0 until arr.length()).map { i ->
+                val obj = arr.getJSONObject(i)
+                StationInfo(
+                    stationId = obj.optString("station_id", ""),
+                    stationName = obj.optString("station_profile_name", "")
+                )
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
     }
 
     data class ConnectionTestResult(val ok: Boolean, val message: String = "")
