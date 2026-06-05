@@ -2,6 +2,7 @@
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -16,6 +17,7 @@ class MainActivity : ComponentActivity() {
         AppPreferences.init(applicationContext)
         com.hamlog.util.EquipmentManager.init(applicationContext)
         actionBar?.hide()
+        installSplashScreen().apply { setKeepOnScreenCondition { false } }
         setContent {
             HamLogTheme {
                 Surface(
