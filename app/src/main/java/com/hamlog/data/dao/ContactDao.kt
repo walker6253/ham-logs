@@ -1,4 +1,4 @@
-﻿package com.hamlog.data.dao
+package com.hamlog.data.dao
 
 import androidx.room.*
 import com.hamlog.data.entity.ContactRecord
@@ -39,6 +39,27 @@ interface ContactDao {
     @Query("SELECT * FROM contacts WHERE callsign LIKE :prefix || '%' ORDER BY dateEpochDay DESC, createdAt DESC")
     fun searchContactsByCallsignPrefix(prefix: String): Flow<List<ContactRecord>>
 
+    @Query("SELECT dateEpochDay, COUNT(*) as count FROM contacts WHERE dateEpochDay >= :startEpochDay AND dateEpochDay <= :endEpochDay GROUP BY dateEpochDay ORDER BY dateEpochDay ASC")
+    fun getDateCountsInRange(startEpochDay: Long, endEpochDay: Long): Flow<List<DateCount>>
+
+    @Query("SELECT mode, COUNT(*) as count FROM contacts WHERE mode IS NOT NULL AND mode != '' GROUP BY mode ORDER BY count DESC")
+    fun getModeDistribution(): Flow<List<ModeCount>>
+
+    @Query("SELECT * FROM contacts ORDER BY createdAt ASC")
+    fun getAllContactsForStats(): Flow<List<ContactRecord>>
+
+    @Query("SELECT MIN(dateEpochDay) FROM contacts")
+    fun getFirstContactDate(): Flow<Long?>
+
+    @Query("SELECT MAX(dateEpochDay) FROM contacts")
+    fun getLastContactDate(): Flow<Long?>
+
+    @Query("SELECT COUNT(DISTINCT callsign) FROM contacts WHERE callsign IS NOT NULL AND callsign != ''")
+    fun getDistinctCallsignCount(): Flow<Int>
+
+    @Query("SELECT COUNT(DISTINCT dateEpochDay) FROM contacts")
+    fun getActiveDaysCount(): Flow<Int>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(contact: ContactRecord): Long
 
@@ -56,5 +77,9 @@ data class LastContactInfo(
 )
 data class DateCount(
     val dateEpochDay: Long,
+    val count: Int
+)
+data class ModeCount(
+    val mode: String,
     val count: Int
 )

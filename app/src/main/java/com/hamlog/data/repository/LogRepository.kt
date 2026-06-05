@@ -1,8 +1,9 @@
-﻿package com.hamlog.data.repository
+package com.hamlog.data.repository
 
 import com.hamlog.data.AppDatabase
 import com.hamlog.data.dao.DateCount
 import com.hamlog.data.dao.LastContactInfo
+import com.hamlog.data.dao.ModeCount
 import com.hamlog.data.entity.ContactRecord
 import com.hamlog.data.entity.DailyLog
 import kotlinx.coroutines.flow.Flow
@@ -59,4 +60,21 @@ class LogRepository(private val database: AppDatabase) {
 
     suspend fun insertDailyLog(dailyLog: DailyLog) =
         dailyLogDao.insert(dailyLog)
+
+    fun getDateCountsInRange(startEpochDay: Long, endEpochDay: Long): Flow<List<DateCount>> =
+        contactDao.getDateCountsInRange(startEpochDay, endEpochDay)
+
+    fun getModeDistribution(): Flow<List<ModeCount>> =
+        contactDao.getModeDistribution()
+
+    fun getAllContactsForStats(): Flow<List<ContactRecord>> =
+        contactDao.getAllContactsForStats()
+
+    fun getFirstContactDate(): Flow<Long?> = contactDao.getFirstContactDate()
+
+    fun getLastContactDate(): Flow<Long?> = contactDao.getLastContactDate()
+
+    fun getDistinctCallsignCount(): Flow<Int> = contactDao.getDistinctCallsignCount()
+
+    fun getActiveDaysCount(): Flow<Int> = contactDao.getActiveDaysCount()
 }

@@ -53,6 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.painterResource
@@ -183,6 +184,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         WindowWidthSizeClass.Medium -> 24.dp
         else -> 16.dp
     }
+    val contentMaxWidth = if (widthClass == WindowWidthSizeClass.Expanded) 880.dp else Dp.Unspecified
+    val isWide = widthClass != WindowWidthSizeClass.Compact
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val userCallsign by AppPreferences.callsign.collectAsState()
@@ -352,14 +355,20 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 )
             }
         ) { padding ->
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = hPadding, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(padding),
+                contentAlignment = Alignment.TopCenter
             ) {
+                Column(
+                    modifier = Modifier
+                        .then(if (contentMaxWidth != Dp.Unspecified) Modifier.widthIn(max = contentMaxWidth) else Modifier)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = hPadding, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
                 // Callsign
                 SettingsCard {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -401,79 +410,157 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             colors = hamFieldColors()
                         )
 
-                        Spacer(Modifier.height(10.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(8.dp))
-                            Text("设备", style = MaterialTheme.typography.titleSmall)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        OutlinedTextField(
-                            value = equipmentText,
-                            onValueChange = { equipmentText = it; AppPreferences.setEquipment(it) },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodySmall,
-                            shape = RoundedCornerShape(8.dp),
-                            colors = hamFieldColors()
-                        )
-
-                        Spacer(Modifier.height(10.dp))
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                            Spacer(Modifier.width(8.dp))
-                            Text("位置", style = MaterialTheme.typography.titleSmall)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        OutlinedTextField(
-                            value = locationText,
-                            onValueChange = { locationText = it; AppPreferences.setLocation(it) },
-                            modifier = Modifier.fillMaxWidth().height(48.dp),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodySmall,
-                            shape = RoundedCornerShape(8.dp),
-                            colors = hamFieldColors(),
-                            trailingIcon = {
-                                IconButton(onClick = {
-                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                                        val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? LocationManager
-                                        try {
-                                            val location = lm?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                                                ?: lm?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                                                if (location != null) {
-                                                    val lat = location.latitude
-                                                    val lng = location.longitude
-                                                    val grid = GridCalculator.latLngToGrid(lat, lng)
-                                                    gridText = grid
-                                                    AppPreferences.setGridSquare(grid)
-                                                    val pos = try {
-                                                        val geocoder = android.location.Geocoder(context)
-                                                        val addresses = geocoder.getFromLocation(lat, lng, 1)
-                                                        if (!addresses.isNullOrEmpty()) {
-                                                            val addr = addresses[0]
-                                                            listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
-                                                                .filter { it.isNotBlank() }
-                                                                .joinToString(" ")
-                                                        } else {
-                                                            grid
-                                                        }
-                                                    } catch (_: Exception) {
-                                                        grid
-                                                    }
-                                                    locationText = pos
-                                                    AppPreferences.setLocation(pos)
-                                            }
-                                        } catch (_: Exception) {}
-                                    } else {
-                                        locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                        if (isWide) {
+                            Spacer(Modifier.height(10.dp))
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Column(Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("设备", style = MaterialTheme.typography.titleSmall)
                                     }
-                                }) {
-                                    Icon(Icons.Default.MyLocation, "获取位置", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                    Spacer(Modifier.height(6.dp))
+                                    OutlinedTextField(
+                                        value = equipmentText,
+                                        onValueChange = { equipmentText = it; AppPreferences.setEquipment(it) },
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = hamFieldColors()
+                                    )
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("位置", style = MaterialTheme.typography.titleSmall)
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    OutlinedTextField(
+                                        value = locationText,
+                                        onValueChange = { locationText = it; AppPreferences.setLocation(it) },
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = hamFieldColors(),
+                                        trailingIcon = {
+                                            IconButton(onClick = {
+                                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                                                    val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? LocationManager
+                                                    try {
+                                                        val location = lm?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                                                            ?: lm?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                                                            if (location != null) {
+                                                                val lat = location.latitude
+                                                                val lng = location.longitude
+                                                                val grid = GridCalculator.latLngToGrid(lat, lng)
+                                                                gridText = grid
+                                                                AppPreferences.setGridSquare(grid)
+                                                                val pos = try {
+                                                                    val geocoder = android.location.Geocoder(context)
+                                                                    val addresses = geocoder.getFromLocation(lat, lng, 1)
+                                                                    if (!addresses.isNullOrEmpty()) {
+                                                                        val addr = addresses[0]
+                                                                        listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
+                                                                            .filter { it.isNotBlank() }
+                                                                            .joinToString(" ")
+                                                                    } else {
+                                                                        grid
+                                                                    }
+                                                                } catch (_: Exception) {
+                                                                    grid
+                                                                }
+                                                                locationText = pos
+                                                                AppPreferences.setLocation(pos)
+                                                        }
+                                                    } catch (_: Exception) {}
+                                                } else {
+                                                    locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                                                }
+                                            }) {
+                                                Icon(Icons.Default.MyLocation, "获取位置", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                            }
+                                        }
+                                    )
                                 }
                             }
-                        )
+                        } else {
+                            Spacer(Modifier.height(10.dp))
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(8.dp))
+                                Text("设备", style = MaterialTheme.typography.titleSmall)
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            OutlinedTextField(
+                                value = equipmentText,
+                                onValueChange = { equipmentText = it; AppPreferences.setEquipment(it) },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodySmall,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = hamFieldColors()
+                            )
+
+                            Spacer(Modifier.height(10.dp))
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                Spacer(Modifier.width(8.dp))
+                                Text("位置", style = MaterialTheme.typography.titleSmall)
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            OutlinedTextField(
+                                value = locationText,
+                                onValueChange = { locationText = it; AppPreferences.setLocation(it) },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodySmall,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = hamFieldColors(),
+                                trailingIcon = {
+                                    IconButton(onClick = {
+                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                                            val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? LocationManager
+                                            try {
+                                                val location = lm?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                                                    ?: lm?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                                                    if (location != null) {
+                                                        val lat = location.latitude
+                                                        val lng = location.longitude
+                                                        val grid = GridCalculator.latLngToGrid(lat, lng)
+                                                        gridText = grid
+                                                        AppPreferences.setGridSquare(grid)
+                                                        val pos = try {
+                                                            val geocoder = android.location.Geocoder(context)
+                                                            val addresses = geocoder.getFromLocation(lat, lng, 1)
+                                                            if (!addresses.isNullOrEmpty()) {
+                                                                val addr = addresses[0]
+                                                                listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
+                                                                    .filter { it.isNotBlank() }
+                                                                    .joinToString(" ")
+                                                            } else {
+                                                                grid
+                                                            }
+                                                        } catch (_: Exception) {
+                                                            grid
+                                                        }
+                                                        locationText = pos
+                                                        AppPreferences.setLocation(pos)
+                                                }
+                                            } catch (_: Exception) {}
+                                        } else {
+                                            locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.MyLocation, "获取位置", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                    }
+                                }
+                            )
+                        }
 
                         Spacer(Modifier.height(10.dp))
 
@@ -968,6 +1055,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 }
 
                 Spacer(Modifier.height(12.dp))
+                }
             }
         }
     }
