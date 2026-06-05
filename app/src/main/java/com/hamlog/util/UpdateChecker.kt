@@ -13,7 +13,8 @@ data class UpdateInfo(
     val latestVersion: String = "",
     val currentVersion: String = "",
     val releaseUrl: String = "",
-    val body: String = ""
+    val body: String = "",
+    val apkDownloadUrl: String = ""
 )
 
 object UpdateChecker {
@@ -46,6 +47,18 @@ object UpdateChecker {
                 val tagName = release.getString("tag_name").trimStart('v')
                 val htmlUrl = release.optString("html_url", GITHUB_RELEASES)
                 val body = release.optString("body", "")
+                var apkUrl = ""
+                val assets = release.optJSONArray("assets")
+                if (assets != null) {
+                    for (i in 0 until assets.length()) {
+                        val asset = assets.getJSONObject(i)
+                        val name = asset.optString("name", "")
+                        if (name.endsWith(".apk")) {
+                            apkUrl = asset.optString("browser_download_url", "")
+                            break
+                        }
+                    }
+                }
 
                 val hasUpdate = compareVersions(tagName, currentVersion) > 0
                 UpdateInfo(
@@ -53,7 +66,8 @@ object UpdateChecker {
                     latestVersion = tagName,
                     currentVersion = currentVersion,
                     releaseUrl = htmlUrl,
-                    body = body
+                    body = body,
+                    apkDownloadUrl = apkUrl
                 )
             } else {
                 UpdateInfo(hasUpdate = false, currentVersion = currentVersion)

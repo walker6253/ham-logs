@@ -96,8 +96,8 @@ fun LogEntryScreen(
         var editMode by remember(contact.id) { mutableStateOf(contact.mode) }
         var editRstSent by remember(contact.id) { mutableStateOf(contact.rstSent) }
         var editRstRecv by remember(contact.id) { mutableStateOf(contact.rstReceived) }
-        var editPowerTx by remember(contact.id) { mutableStateOf(contact.powerTx) }
-        var editPowerRx by remember(contact.id) { mutableStateOf(contact.powerRx) }
+        var editPowerTx by remember(contact.id) { mutableStateOf(contact.powerTx.trimEnd('W', 'w').trim()) }
+        var editPowerRx by remember(contact.id) { mutableStateOf(contact.powerRx.trimEnd('W', 'w').trim()) }
         var editNotes by remember(contact.id) { mutableStateOf(contact.notes) }
         var editDateEpochDay by remember(contact.id) { mutableStateOf(contact.dateEpochDay) }
         var editCreatedAt by remember(contact.id) { mutableStateOf(contact.createdAt) }
@@ -183,11 +183,11 @@ fun LogEntryScreen(
                     }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("我的功率", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            Text("我的功率 (W)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
                             OutlinedTextField(editPowerTx, { editPowerTx = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text("对方功率", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
+                            Text("对方功率 (W)", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp), color = MaterialTheme.colorScheme.tertiary)
                             OutlinedTextField(editPowerRx, { editPowerRx = it }, Modifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif), shape = RoundedCornerShape(8.dp), colors = OutlinedTextFieldDefaults.colors(unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow, focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
                         }
                     }
@@ -199,7 +199,7 @@ fun LogEntryScreen(
                     Row(Modifier.fillMaxWidth().padding(top = 24.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                         TextButton(onClick = { editingContact = null }) { Text("取消", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
                         Spacer(Modifier.width(16.dp))
-                        Button(onClick = { viewModel.updateContact(contact.copy(dateEpochDay = editDateEpochDay, createdAt = editCreatedAt, callsign = editCallsign.trim(), frequencyMHz = editFreq.toDoubleOrNull() ?: contact.frequencyMHz, mode = editMode.trim(), rstSent = editRstSent.trim(), rstReceived = editRstRecv.trim(), powerTx = editPowerTx.trim(), powerRx = editPowerRx.trim(), notes = editNotes.trim())); editingContact = null }, shape = RoundedCornerShape(50), elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)) { Text("保存", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onPrimary) }
+                        Button(onClick = { viewModel.updateContact(contact.copy(dateEpochDay = editDateEpochDay, createdAt = editCreatedAt, callsign = editCallsign.trim(), frequencyMHz = editFreq.toDoubleOrNull() ?: contact.frequencyMHz, mode = editMode.trim(), rstSent = editRstSent.trim(), rstReceived = editRstRecv.trim(), powerTx = editPowerTx.trim().trimEnd('W', 'w').trim(), powerRx = editPowerRx.trim().trimEnd('W', 'w').trim(), notes = editNotes.trim())); editingContact = null }, shape = RoundedCornerShape(50), elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)) { Text("保存", style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp), color = MaterialTheme.colorScheme.onPrimary) }
                     }
                 }
             }

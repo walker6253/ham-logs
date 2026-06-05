@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.Manifest
+import android.os.Build
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -53,8 +54,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -78,6 +80,11 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import android.widget.Toast
+import java.io.File
+import java.net.URL
+import java.net.HttpURLConnection
+import android.os.Environment
+import androidx.core.content.FileProvider
 import com.hamlog.util.CloudlogSync
 import com.hamlog.util.StationInfo
 import org.json.JSONArray
@@ -184,8 +191,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
         WindowWidthSizeClass.Medium -> 24.dp
         else -> 16.dp
     }
-    val contentMaxWidth = if (widthClass == WindowWidthSizeClass.Expanded) 880.dp else Dp.Unspecified
-    val isWide = widthClass != WindowWidthSizeClass.Compact
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val userCallsign by AppPreferences.callsign.collectAsState()
@@ -270,6 +275,8 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     var showUpdateDialog by remember { mutableStateOf(false) }
     var updateInfo by remember { mutableStateOf<com.hamlog.util.UpdateInfo?>(null) }
     var isCheckingUpdate by remember { mutableStateOf(false) }
+    var downloadingProgress by remember { mutableStateOf<Float?>(null) }
+    var isDownloadingUpdate by remember { mutableStateOf(false) }
     val updateScope = rememberCoroutineScope()
     val adifPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
@@ -355,20 +362,14 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 )
             }
         ) { padding ->
-            Box(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.TopCenter
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = hPadding, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .then(if (contentMaxWidth != Dp.Unspecified) Modifier.widthIn(max = contentMaxWidth) else Modifier)
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                        .padding(horizontal = hPadding, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
                 // Callsign
                 SettingsCard {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -410,157 +411,79 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             colors = hamFieldColors()
                         )
 
-                        if (isWide) {
-                            Spacer(Modifier.height(10.dp))
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Column(Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("设备", style = MaterialTheme.typography.titleSmall)
-                                    }
-                                    Spacer(Modifier.height(6.dp))
-                                    OutlinedTextField(
-                                        value = equipmentText,
-                                        onValueChange = { equipmentText = it; AppPreferences.setEquipment(it) },
-                                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                                        singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodySmall,
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = hamFieldColors()
-                                    )
-                                }
-                                Column(Modifier.weight(1f)) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("位置", style = MaterialTheme.typography.titleSmall)
-                                    }
-                                    Spacer(Modifier.height(6.dp))
-                                    OutlinedTextField(
-                                        value = locationText,
-                                        onValueChange = { locationText = it; AppPreferences.setLocation(it) },
-                                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                                        singleLine = true,
-                                        textStyle = MaterialTheme.typography.bodySmall,
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = hamFieldColors(),
-                                        trailingIcon = {
-                                            IconButton(onClick = {
-                                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                                                    val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? LocationManager
-                                                    try {
-                                                        val location = lm?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                                                            ?: lm?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                                                            if (location != null) {
-                                                                val lat = location.latitude
-                                                                val lng = location.longitude
-                                                                val grid = GridCalculator.latLngToGrid(lat, lng)
-                                                                gridText = grid
-                                                                AppPreferences.setGridSquare(grid)
-                                                                val pos = try {
-                                                                    val geocoder = android.location.Geocoder(context)
-                                                                    val addresses = geocoder.getFromLocation(lat, lng, 1)
-                                                                    if (!addresses.isNullOrEmpty()) {
-                                                                        val addr = addresses[0]
-                                                                        listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
-                                                                            .filter { it.isNotBlank() }
-                                                                            .joinToString(" ")
-                                                                    } else {
-                                                                        grid
-                                                                    }
-                                                                } catch (_: Exception) {
-                                                                    grid
-                                                                }
-                                                                locationText = pos
-                                                                AppPreferences.setLocation(pos)
-                                                        }
-                                                    } catch (_: Exception) {}
-                                                } else {
-                                                    locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                                                }
-                                            }) {
-                                                Icon(Icons.Default.MyLocation, "获取位置", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                            }
-                                        }
-                                    )
-                                }
-                            }
-                        } else {
-                            Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(10.dp))
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                                Text("设备", style = MaterialTheme.typography.titleSmall)
-                            }
-                            Spacer(Modifier.height(6.dp))
-                            OutlinedTextField(
-                                value = equipmentText,
-                                onValueChange = { equipmentText = it; AppPreferences.setEquipment(it) },
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodySmall,
-                                shape = RoundedCornerShape(8.dp),
-                                colors = hamFieldColors()
-                            )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("设备", style = MaterialTheme.typography.titleSmall)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = equipmentText,
+                            onValueChange = { equipmentText = it; AppPreferences.setEquipment(it) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = hamFieldColors()
+                        )
 
-                            Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(10.dp))
 
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
-                                Spacer(Modifier.width(8.dp))
-                                Text("位置", style = MaterialTheme.typography.titleSmall)
-                            }
-                            Spacer(Modifier.height(6.dp))
-                            OutlinedTextField(
-                                value = locationText,
-                                onValueChange = { locationText = it; AppPreferences.setLocation(it) },
-                                modifier = Modifier.fillMaxWidth().height(48.dp),
-                                singleLine = true,
-                                textStyle = MaterialTheme.typography.bodySmall,
-                                shape = RoundedCornerShape(8.dp),
-                                colors = hamFieldColors(),
-                                trailingIcon = {
-                                    IconButton(onClick = {
-                                        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                                            val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? LocationManager
-                                            try {
-                                                val location = lm?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                                                    ?: lm?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                                                    if (location != null) {
-                                                        val lat = location.latitude
-                                                        val lng = location.longitude
-                                                        val grid = GridCalculator.latLngToGrid(lat, lng)
-                                                        gridText = grid
-                                                        AppPreferences.setGridSquare(grid)
-                                                        val pos = try {
-                                                            val geocoder = android.location.Geocoder(context)
-                                                            val addresses = geocoder.getFromLocation(lat, lng, 1)
-                                                            if (!addresses.isNullOrEmpty()) {
-                                                                val addr = addresses[0]
-                                                                listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
-                                                                    .filter { it.isNotBlank() }
-                                                                    .joinToString(" ")
-                                                            } else {
-                                                                grid
-                                                            }
-                                                        } catch (_: Exception) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("位置", style = MaterialTheme.typography.titleSmall)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        OutlinedTextField(
+                            value = locationText,
+                            onValueChange = { locationText = it; AppPreferences.setLocation(it) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = hamFieldColors(),
+                            trailingIcon = {
+                                IconButton(onClick = {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                                        val lm = context.getSystemService(android.content.Context.LOCATION_SERVICE) as? LocationManager
+                                        try {
+                                            val location = lm?.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                                                ?: lm?.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                                                if (location != null) {
+                                                    val lat = location.latitude
+                                                    val lng = location.longitude
+                                                    val grid = GridCalculator.latLngToGrid(lat, lng)
+                                                    gridText = grid
+                                                    AppPreferences.setGridSquare(grid)
+                                                    val pos = try {
+                                                        val geocoder = android.location.Geocoder(context)
+                                                        val addresses = geocoder.getFromLocation(lat, lng, 1)
+                                                        if (!addresses.isNullOrEmpty()) {
+                                                            val addr = addresses[0]
+                                                            listOfNotNull(addr.adminArea, addr.locality, addr.subLocality, addr.thoroughfare)
+                                                                .filter { it.isNotBlank() }
+                                                                .joinToString(" ")
+                                                        } else {
                                                             grid
                                                         }
-                                                        locationText = pos
-                                                        AppPreferences.setLocation(pos)
-                                                }
-                                            } catch (_: Exception) {}
-                                        } else {
-                                            locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-                                        }
-                                    }) {
-                                        Icon(Icons.Default.MyLocation, "获取位置", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                                                    } catch (_: Exception) {
+                                                        grid
+                                                    }
+                                                    locationText = pos
+                                                    AppPreferences.setLocation(pos)
+                                            }
+                                        } catch (_: Exception) {}
+                                    } else {
+                                        locationPermLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                                     }
+                                }) {
+                                    Icon(Icons.Default.MyLocation, "获取位置", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                                 }
-                            )
-                        }
+                            }
+                        )
 
                         Spacer(Modifier.height(10.dp))
 
@@ -1055,7 +978,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 }
 
                 Spacer(Modifier.height(12.dp))
-                }
             }
         }
     }
@@ -1075,38 +997,122 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             },
             text = {
                 Column {
-                    Text(
-                        "当前版本: ${info.currentVersion}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    if (info.hasUpdate) {
+                    if (isDownloadingUpdate) {
                         Text(
-                            "最新版本: ${info.latestVersion}",
+                            "正在下载 v${info.latestVersion}...",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            fontWeight = FontWeight.SemiBold
                         )
-                        if (info.body.isNotBlank()) {
-                            Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(12.dp))
+                        if (downloadingProgress != null && downloadingProgress!! >= 0f) {
+                            LinearProgressIndicator(
+                                progress = { downloadingProgress!! },
+                                modifier = Modifier.fillMaxWidth().height(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                            )
+                            Spacer(Modifier.height(6.dp))
                             Text(
-                                info.body.take(300),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 10
+                                "${(downloadingProgress!! * 100).toInt()}%",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth().height(8.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
                             )
                         }
                     } else {
                         Text(
-                            "没有可用的更新",
+                            "当前版本: ${info.currentVersion}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        Spacer(Modifier.height(4.dp))
+                        if (info.hasUpdate) {
+                            Text(
+                                "最新版本: ${info.latestVersion}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            if (info.body.isNotBlank()) {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    info.body.take(300),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 10
+                                )
+                            }
+                        } else {
+                            Text(
+                                "没有可用的更新",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             },
             confirmButton = {
-                if (info.hasUpdate && info.releaseUrl.isNotBlank()) {
+                if (info.hasUpdate && info.apkDownloadUrl.isNotBlank() && !isDownloadingUpdate) {
+                    TextButton(onClick = {
+                        isDownloadingUpdate = true
+                        downloadingProgress = 0f
+                        updateScope.launch {
+                            try {
+                                val apkFile = withContext(Dispatchers.IO) {
+                                    val file = File(context.cacheDir, "hamlog_update.apk")
+                                    if (file.exists()) file.delete()
+                                    val url = URL(info.apkDownloadUrl)
+                                    val conn = url.openConnection() as HttpURLConnection
+                                    conn.connectTimeout = 15000
+                                    conn.readTimeout = 60000
+                                    val totalBytes = conn.contentLength.toLong()
+                                    var downloaded = 0L
+                                    conn.inputStream.use { input ->
+                                        file.outputStream().use { output ->
+                                            val buffer = ByteArray(8192)
+                                            var bytesRead = input.read(buffer)
+                                            while (bytesRead != -1) {
+                                                output.write(buffer, 0, bytesRead)
+                                                downloaded += bytesRead
+                                                downloadingProgress = if (totalBytes > 0) {
+                                                    (downloaded.toFloat() / totalBytes).coerceIn(0f, 1f)
+                                                } else -1f
+                                                bytesRead = input.read(buffer)
+                                            }
+                                        }
+                                    }
+                                    conn.disconnect()
+                                    file
+                                }
+                                val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                    FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
+                                } else {
+                                    android.net.Uri.fromFile(apkFile)
+                                }
+                                val install = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(uri, "application/vnd.android.package-archive")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(install)
+                                showUpdateDialog = false
+                                isDownloadingUpdate = false
+                                downloadingProgress = null
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_LONG).show()
+                                isDownloadingUpdate = false
+                                downloadingProgress = null
+                            }
+                        }
+                    }) {
+                        Text("直接更新")
+                    }
+                } else if (info.hasUpdate) {
                     val uriHandler = LocalUriHandler.current
                     TextButton(onClick = {
                         showUpdateDialog = false
@@ -1121,8 +1127,10 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showUpdateDialog = false }) {
-                    Text("关闭")
+                if (!isDownloadingUpdate) {
+                    TextButton(onClick = { showUpdateDialog = false }) {
+                        Text("关闭")
+                    }
                 }
             }
         )
