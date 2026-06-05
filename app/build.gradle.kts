@@ -12,8 +12,8 @@ android {
         applicationId = "com.hamlog"
         minSdk = 26
         targetSdk = 34
-        versionCode = 12
-        versionName = "1.0.09"
+        versionCode = 13
+        versionName = "1.0.10"
     }
 
     signingConfigs {
