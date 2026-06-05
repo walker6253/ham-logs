@@ -36,6 +36,14 @@ import com.hamlog.util.UpdateChecker
 import com.hamlog.util.UpdateInfo
 import android.widget.Toast
 import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.content.FileProvider
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.launch
@@ -117,41 +125,50 @@ fun MainScreen(
                             downloadingProgress = 0f
                             scope.launch {
                                 try {
-                                    // Remove old update files
-                                    context.cacheDir.listFiles()?.filter { it.name.startsWith("update-") }?.forEach { it.delete() }
-                                    val apkFile = java.io.File(context.cacheDir, "update-v${info.latestVersion}.apk")
-                                    apkFile.delete()
-                                    val url = java.net.URL(info.apkDownloadUrl)
-                                    val conn = url.openConnection() as java.net.HttpURLConnection
-                                    conn.connectTimeout = 30000
-                                    conn.readTimeout = 30000
-                                    conn.setRequestProperty("Cache-Control", "no-cache")
-                                    conn.useCaches = false
-                                    conn.connect()
-                                    val total = conn.contentLength.toLong()
-                                    var downloaded = 0L
-                                    conn.inputStream.use { input ->
-                                        apkFile.outputStream().use { output ->
-                                            val buffer = ByteArray(8192)
-                                            var bytes = input.read(buffer)
-                                            while (bytes >= 0) {
-                                                output.write(buffer, 0, bytes)
-                                                downloaded += bytes
-                                                if (total > 0) downloadingProgress = downloaded.toFloat() / total
-                                                bytes = input.read(buffer)
+                                    val apkFile = withContext(Dispatchers.IO) {
+                                        val file = File(context.cacheDir, "hamlog_auto_update.apk")
+                                        if (file.exists()) file.delete()
+                                        val url = URL(info.apkDownloadUrl)
+                                        val conn = url.openConnection() as HttpURLConnection
+                                        conn.connectTimeout = 15000
+                                        conn.readTimeout = 60000
+                                        val totalBytes = conn.contentLength.toLong()
+                                        var downloaded = 0L
+                                        conn.inputStream.use { input ->
+                                            file.outputStream().use { output ->
+                                                val buffer = ByteArray(8192)
+                                                var bytesRead = input.read(buffer)
+                                                while (bytesRead != -1) {
+                                                    output.write(buffer, 0, bytesRead)
+                                                    downloaded += bytesRead
+                                                    downloadingProgress = if (totalBytes > 0) {
+                                                        (downloaded.toFloat() / totalBytes).coerceIn(0f, 1f)
+                                                    } else -1f
+                                                    bytesRead = input.read(buffer)
+                                                }
                                             }
                                         }
+                                        conn.disconnect()
+                                        file
                                     }
-                                    android.util.Log.d("UpdateChecker", "Downloaded: ${apkFile.absolutePath}, size=${apkFile.length()}, expected=$total")
-                                    val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
-                                    intent.setDataAndType(uri, "application/vnd.android.package-archive")
-                                    intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                    context.startActivity(intent)
+                                    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                                        FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
+                                    } else {
+                                        android.net.Uri.fromFile(apkFile)
+                                    }
+                                    val install = Intent(Intent.ACTION_VIEW).apply {
+                                        setDataAndType(uri, "application/vnd.android.package-archive")
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(install)
                                     showAutoUpdateDialog = false
                                 } catch (e: Exception) {
-                                    Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_LONG).show()
+                                    isDownloadingUpdate = false
+                                    downloadingProgress = null
+                                    val errMsg = e.message ?: e.toString()
+                                    android.util.Log.e("UpdateChecker", "Download failed", e)
+                                    Toast.makeText(context, "下载失败: $errMsg", Toast.LENGTH_LONG).show()
                                 } finally {
                                     isDownloadingUpdate = false
                                     downloadingProgress = null
