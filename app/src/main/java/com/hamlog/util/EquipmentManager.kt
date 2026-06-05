@@ -125,4 +125,23 @@ object EquipmentManager {
         list.removeAll { it.brand == brand }
         setRigs(list)
     }
+
+    fun moveAntenna(from: Int, to: Int) {
+        val list = getAntennas().toMutableList()
+        if (from in list.indices && to in list.indices && from != to) {
+            val item = list.removeAt(from)
+            list.add(to, item)
+            setAntennas(list)
+        }
+    }
+
+    fun moveRigBrand(from: Int, to: Int) {
+        val list = getRigs().toMutableList()
+        if (from in list.indices && to in list.indices && from != to) {
+            val item = list.removeAt(from)
+            list.add(to, item)
+            setRigs(list)
+        }
+    }
+
 }

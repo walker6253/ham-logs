@@ -1,4 +1,4 @@
-﻿package com.hamlog.ui.screen
+package com.hamlog.ui.screen
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -22,11 +22,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.GridOn
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Place
@@ -36,13 +39,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
@@ -54,8 +64,115 @@ import com.hamlog.R
 import com.hamlog.viewmodel.SettingsViewModel
 import androidx.core.content.ContextCompat
 import java.time.ZoneId
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import android.widget.Toast
+import com.hamlog.util.CloudlogSync
+import com.hamlog.util.StationInfo
+import org.json.JSONArray
+import org.json.JSONObject
+
+@Composable
+fun <T> DragReorderableColumn(
+    items: List<T>,
+    modifier: Modifier = Modifier,
+    onMove: (Int, Int) -> Unit,
+    itemContent: @Composable (T, Int) -> Unit
+) {
+    var draggedIndex by remember { mutableStateOf<Int?>(null) }
+    var draggedItemStartIndex by remember { mutableStateOf(0) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    val itemHeight = 36.dp
+    val itemHeightPx = with(LocalDensity.current) { itemHeight.toPx() }
+
+    val targetIndex = if (draggedIndex != null) {
+        (draggedItemStartIndex + (dragOffset / itemHeightPx).roundToInt()).coerceIn(0, items.lastIndex)
+    } else -1
+
+    Column(modifier) {
+        items.forEachIndexed { index, item ->
+            val isDragging = draggedIndex == index
+            val isTargetSlot = !isDragging && draggedIndex != null && index == targetIndex
+            Box(
+                Modifier
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .graphicsLayer {
+                        translationY = if (isDragging) dragOffset else 0f
+                        alpha = if (isDragging) 0.9f else 1f
+                        scaleX = if (isDragging) 1.03f else 1f
+                        scaleY = if (isDragging) 1.03f else 1f
+                    }
+                    .pointerInput(item) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                draggedIndex = index
+                                draggedItemStartIndex = index
+                                dragOffset = 0f
+                            },
+                            onDragEnd = {
+                                val target = (dragOffset / itemHeightPx).roundToInt()
+                                val newIndex = (draggedItemStartIndex + target).coerceIn(0, items.lastIndex)
+                                if (newIndex != draggedItemStartIndex) {
+                                    onMove(draggedItemStartIndex, newIndex)
+                                }
+                                draggedIndex = null
+                                dragOffset = 0f
+                            },
+                            onDragCancel = {
+                                draggedIndex = null
+                                dragOffset = 0f
+                            },
+                            onDrag = { change, offset ->
+                                change.consume()
+                                dragOffset += offset.y
+                            }
+                        )
+                    }
+            ) {
+                Column {
+                    if (isTargetSlot && targetIndex < draggedItemStartIndex) {
+                        // Show gap above target
+                        Box(Modifier.fillMaxWidth().height(itemHeight).padding(horizontal=4.dp).graphicsLayer { alpha = 0.3f }) {
+                            Surface(Modifier.fillMaxSize(), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primary) {}
+                        }
+                    }
+                    itemContent(item, index)
+                    if (isTargetSlot && targetIndex > draggedItemStartIndex) {
+                        // Show gap below target
+                        Box(Modifier.fillMaxWidth().height(itemHeight).padding(horizontal=4.dp).graphicsLayer { alpha = 0.3f }) {
+                            Surface(Modifier.fillMaxSize(), shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.primary) {}
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
+private fun parseStationListJson(json: String): List<StationInfo> {
+    if (json.isBlank() || json == "[]") return emptyList()
+    return try {
+        val arr = JSONArray(json)
+        (0 until arr.length()).map { i ->
+            val obj = arr.getJSONObject(i)
+            StationInfo(
+                stationId = obj.optString("stationId", ""),
+                stationName = obj.optString("stationName", "")
+            )
+        }
+    } catch (_: Exception) { emptyList() }
+}
+
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
     val widthClass = LocalWindowSizeClass.current
@@ -82,6 +199,36 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     LaunchedEffect(userEquipment) { equipmentText = userEquipment }
     LaunchedEffect(userLocation) { locationText = userLocation }
     LaunchedEffect(userGrid) { gridText = userGrid }
+
+
+    // Cloudlog state
+    val cloudlogUrlPref by AppPreferences.cloudlogUrl.collectAsState()
+    var cloudlogUrl by remember { mutableStateOf(cloudlogUrlPref) }
+    LaunchedEffect(cloudlogUrlPref) { cloudlogUrl = cloudlogUrlPref }
+    val cloudlogApiKeyPref by AppPreferences.cloudlogApiKey.collectAsState()
+    var cloudlogApiKey by remember { mutableStateOf(cloudlogApiKeyPref) }
+    LaunchedEffect(cloudlogApiKeyPref) { cloudlogApiKey = cloudlogApiKeyPref }
+    var cloudlogKeyFocused by remember { mutableStateOf(false) }
+    val stationProfileIdPref by AppPreferences.stationProfileId.collectAsState()
+    var stationProfileId by remember { mutableStateOf(stationProfileIdPref) }
+    LaunchedEffect(stationProfileIdPref) { stationProfileId = stationProfileIdPref }
+    val autoUploadPref by AppPreferences.autoUploadEnabled.collectAsState()
+    var autoUploadEnabled by remember { mutableStateOf(autoUploadPref) }
+    LaunchedEffect(autoUploadPref) { autoUploadEnabled = autoUploadPref }
+    var isSyncing by remember { mutableStateOf(false) }
+    var isTestingConn by remember { mutableStateOf(false) }
+    var testConnResult by remember { mutableStateOf<String?>(null) }
+    var syncResult by remember { mutableStateOf<com.hamlog.util.SyncResult?>(null) }
+    var showSyncResult by remember { mutableStateOf(false) }
+    var syncProgress by remember { mutableStateOf(0 to 0) }
+    var stationDropdownExpanded by remember { mutableStateOf(false) }
+    val stationListJsonPref by AppPreferences.stationListJson.collectAsState()
+    var stationList by remember { mutableStateOf(parseStationListJson(stationListJsonPref)) }
+    LaunchedEffect(stationListJsonPref) {
+        if (stationListJsonPref != "[]") {
+            stationList = parseStationListJson(stationListJsonPref)
+        }
+    }
 
     LaunchedEffect(uiState.exportComplete, uiState.exportUri) {
         if (uiState.exportComplete && uiState.exportUri != null) {
@@ -219,13 +366,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             Spacer(Modifier.width(8.dp))
                             Text("\u547c\u53f7", style = MaterialTheme.typography.titleSmall)
                         }
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "\u8bbe\u7f6e\u540e\u4e3b\u9875\u663e\u793a\u300cXXX \u7684\u901a\u8054\u65e5\u5fd7\u300d",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(Modifier.height(10.dp))
+                        Spacer(Modifier.height(12.dp))
                         OutlinedTextField(
                             value = callsignText,
                             onValueChange = { val v = it.uppercase(); callsignText = v; AppPreferences.setCallsign(v.trim()) },
@@ -245,7 +386,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Badge, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u59d3\u540d", style = MaterialTheme.typography.titleSmall)
+                            Text("姓名", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -263,7 +404,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Computer, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u8bbe\u5907", style = MaterialTheme.typography.titleSmall)
+                            Text("设备", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -281,7 +422,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Place, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u4f4d\u7f6e", style = MaterialTheme.typography.titleSmall)
+                            Text("位置", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
@@ -337,16 +478,16 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.GridOn, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u7f51\u683c", style = MaterialTheme.typography.titleSmall)
+                            Text("网格", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
                             value = gridText,
-                            onValueChange = { val v = it.uppercase(); gridText = v; AppPreferences.setGridSquare(v) },
+                            onValueChange = { gridText = it; AppPreferences.setGridSquare(it) },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif),
-                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                             shape = RoundedCornerShape(8.dp),
                             colors = hamFieldColors()
                         )
@@ -359,7 +500,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Schedule, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.secondary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u65f6\u533a", style = MaterialTheme.typography.titleSmall)
+                            Text("时区", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(10.dp))
                         ExposedDropdownMenuBox(expanded = tzExpanded, onExpandedChange = { tzExpanded = it }) {
@@ -387,25 +528,308 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 }
 
                 // Equipment Maintenance
-                @OptIn(ExperimentalLayoutApi::class)
                 SettingsCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Build,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(8.dp));Text("设备维护",style=MaterialTheme.typography.titleSmall) }
                         Spacer(Modifier.height(8.dp))
                         Text("天馈",style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(4.dp))
-                        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                            antennaList.forEach { item -> Surface(shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.surfaceVariant,modifier=Modifier.clickable{EquipmentManager.removeAntenna(item);refreshEquipment()}){Row(Modifier.padding(start=8.dp,end=6.dp,top=4.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){Text(item,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.width(4.dp));Icon(Icons.Default.Close,null,Modifier.size(10.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f))}} }
+                        DragReorderableColumn(
+                            items = antennaList.toList(),
+                            onMove = { from, to -> EquipmentManager.moveAntenna(from, to); refreshEquipment() }
+                        ) { item, _ ->
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = {
+                                    if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                        EquipmentManager.removeAntenna(item)
+                                        refreshEquipment()
+                                        true
+                                    } else false
+                                }
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = {},
+                                enableDismissFromStartToEnd = true,
+                                enableDismissFromEndToStart = true
+                            ) {
+                                Row(Modifier.fillMaxWidth().height(36.dp).padding(horizontal=4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=8.dp))
+                                    Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                }
                             }
+                        }
                         Spacer(Modifier.height(4.dp))
-                        Surface(onClick={showAntennaAdd=true},modifier=Modifier.fillMaxWidth(),shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f)){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
+                        Surface(onClick={showAntennaAdd=true},modifier=Modifier.fillMaxWidth(),shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f)){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加天馈",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
                         Spacer(Modifier.height(12.dp))
                         Text("设备",style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(4.dp))
-                        rigList.forEach { cat -> Column(Modifier.padding(bottom=8.dp)){Text(cat.brand,style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Medium,color=MaterialTheme.colorScheme.onSurface);Spacer(Modifier.height(4.dp));FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){cat.models.forEach{model->Surface(shape=MaterialTheme.shapes.extraSmall,color=MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.6f),modifier=Modifier.clickable{EquipmentManager.removeRigModel(cat.brand,model);refreshEquipment()}){Row(Modifier.padding(start=6.dp,end=6.dp,top=3.dp,bottom=3.dp),verticalAlignment=Alignment.CenterVertically){Text(model,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.width(3.dp));Icon(Icons.Default.Close,null,Modifier.size(9.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))}}}}} }
+                        DragReorderableColumn(
+                            items = rigList.toList(),
+                            onMove = { from, to ->
+                                EquipmentManager.moveRigBrand(from, to)
+                                refreshEquipment()
+                            }
+                        ) { cat, _ ->
+                            val brandDismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = {
+                                    if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                        EquipmentManager.removeRigBrand(cat.brand)
+                                        refreshEquipment()
+                                        true
+                                    } else false
+                                }
+                            )
+                            SwipeToDismissBox(
+                                state = brandDismissState,
+                                backgroundContent = {},
+                                enableDismissFromStartToEnd = true,
+                                enableDismissFromEndToStart = true
+                            ) {
+                                Column(Modifier.padding(bottom=6.dp)) {
+                                Row(Modifier.fillMaxWidth().height(28.dp).padding(horizontal=4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(cat.brand, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
+                                    Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                }
+                                DragReorderableColumn(
+                                    items = cat.models,
+                                    onMove = { from, to ->
+                                        val newList = rigList.toList().toMutableList()
+                                        val idx = newList.indexOfFirst { it.brand == cat.brand }
+                                        if (idx >= 0) {
+                                            val newModels = cat.models.toMutableList()
+                                            val m = newModels.removeAt(from)
+                                            newModels.add(to, m)
+                                            newList[idx] = cat.copy(models = newModels)
+                                            EquipmentManager.setRigs(newList)
+                                            refreshEquipment()
+                                        }
+                                    }
+                                ) { model, _ ->
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = {
+                                            if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                                EquipmentManager.removeRigModel(cat.brand, model)
+                                                refreshEquipment()
+                                                true
+                                            } else false
+                                        }
+                                    )
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {},
+                                        enableDismissFromStartToEnd = true,
+                                        enableDismissFromEndToStart = true
+                                    ) {
+                                        Row(Modifier.fillMaxWidth().padding(start=8.dp).height(32.dp).padding(horizontal=4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(model, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
+                                            Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                        }
+                                    }
+                                }
+                            }
+                            }
+                        }
                         Spacer(Modifier.height(4.dp))
                         Surface(onClick={showRigAdd=true},shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f),modifier=Modifier.fillMaxWidth()){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加设备",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
                     }
+                }
+
+                Spacer(Modifier.height(8.dp))
+                // Cloudlog Sync
+                SettingsCard {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Cloud, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Cloudlog 同步设置", style = MaterialTheme.typography.titleSmall)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text("API 地址", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = cloudlogUrl,
+                            onValueChange = { cloudlogUrl = it; AppPreferences.setCloudlogUrl(it) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = hamFieldColors()
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        val maskTransformation = remember {
+                            object : VisualTransformation {
+                                override fun filter(text: AnnotatedString): TransformedText {
+                                    val raw = text.text
+                                    if (raw.length <= 10) return TransformedText(text, OffsetMapping.Identity)
+                                    val maskCount = minOf(7, raw.length - 4)
+                                    val prefixLen = (raw.length - maskCount) / 2
+                                    val masked = raw.substring(0, prefixLen) + "*".repeat(maskCount) + raw.substring(prefixLen + maskCount)
+                                    return TransformedText(AnnotatedString(masked), OffsetMapping.Identity)
+                                }
+                            }
+                        }
+                        Text("API Key", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = cloudlogApiKey,
+                            onValueChange = { cloudlogApiKey = it; AppPreferences.setCloudlogApiKey(it) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp).onFocusChanged { cloudlogKeyFocused = it.isFocused },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = hamFieldColors(),
+                            visualTransformation = if (cloudlogKeyFocused) VisualTransformation.None else maskTransformation
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text("台站 ID", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        Box {
+                            OutlinedTextField(
+                                value = stationList.firstOrNull { it.stationId == stationProfileId }?.stationName ?: stationProfileId,
+                                onValueChange = {},
+                                readOnly = true,
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodySmall,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = hamFieldColors(),
+                                trailingIcon = {
+                                    IconButton(onClick = { stationDropdownExpanded = true }) {
+                                        Icon(Icons.Default.KeyboardArrowDown, "展开", Modifier.size(18.dp))
+                                    }
+                                }
+                            )
+                            DropdownMenu(
+                                expanded = stationDropdownExpanded,
+                                onDismissRequest = { stationDropdownExpanded = false }
+                            ) {
+                                stationList.forEach { station ->
+                                    DropdownMenuItem(
+                                        text = { Text(station.stationName + " (" + station.stationId + ")", style = MaterialTheme.typography.bodySmall) },
+                                        onClick = {
+                                            stationProfileId = station.stationId
+                                            AppPreferences.setStationProfileId(station.stationId)
+                                            stationDropdownExpanded = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("保存后自动上传", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Switch(
+                                checked = autoUploadEnabled,
+                                onCheckedChange = { autoUploadEnabled = it; AppPreferences.setAutoUploadEnabled(it) },
+                                colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    isTestingConn = true
+                                    testConnResult = null
+                                    updateScope.launch {
+                                        val res = com.hamlog.util.CloudlogSync.testConnection(cloudlogUrl, cloudlogApiKey)
+                                        isTestingConn = false
+                                        testConnResult = if (res.ok) {
+                                            if (res.ok) {
+                                                try {
+                                                    stationList = com.hamlog.util.CloudlogSync.fetchStationInfo(cloudlogUrl, cloudlogApiKey)
+                                                    val jsonArr = JSONArray()
+                                                    stationList.forEach { s ->
+                                                        jsonArr.put(JSONObject().apply {
+                                                            put("stationId", s.stationId)
+                                                            put("stationName", s.stationName)
+                                                        })
+                                                    }
+                                                    AppPreferences.setStationListJson(jsonArr.toString())
+                                                } catch (_: Exception) { }
+                                            }
+                                            "连接成功"
+                                        } else {
+                                            "失败: " + res.message
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(40.dp),
+                                enabled = cloudlogUrl.isNotBlank() && !isTestingConn && !isSyncing,
+                                shape = MaterialTheme.shapes.small,
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                if (isTestingConn) {
+                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.width(6.dp))
+                                }
+                                Text(
+                                    when {
+                                        isTestingConn -> "测试中..."
+                                        testConnResult != null -> testConnResult!!
+                                        else -> "测试连接"
+                                    },
+                                    fontSize = 12.sp,
+                                    color = when {
+                                        testConnResult != null && testConnResult!!.startsWith("连接成功") -> Color(0xFF4CAF50)
+                                        testConnResult != null -> Color(0xFFE53935)
+                                        else -> MaterialTheme.colorScheme.primary
+                                    }
+                                )
+                            }
+                            Button(
+                                onClick = {
+                                    isSyncing = true; syncResult = null; syncProgress = 0 to 0
+                                    updateScope.launch {
+                                        val contacts = viewModel.getAllContactsForSync()
+                                        syncResult = com.hamlog.util.CloudlogSync.syncContacts(
+                                            cloudlogUrl, cloudlogApiKey, contacts,
+                                            callsign = callsignText, gridSquare = gridText, stationProfileId = stationProfileId
+                                        ) { done, total -> syncProgress = done to total }
+                                        isSyncing = false; showSyncResult = true
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(40.dp),
+                                enabled = cloudlogUrl.isNotBlank() && cloudlogApiKey.isNotBlank() && !isSyncing && !isTestingConn && uiState.totalContacts > 0,
+                                shape = MaterialTheme.shapes.small,
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                if (isSyncing) {
+                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("/", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                                } else {
+                                    Text("同步日志", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                                }
+                            }
+                        }
+                    }
+                }
+                // Sync Result Dialog
+                if (showSyncResult && syncResult != null) {
+                    val r = syncResult!!
+                    AlertDialog(
+                        onDismissRequest = { showSyncResult = false },
+                        shape = MaterialTheme.shapes.large,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        title = { Text("同步完成", fontWeight = FontWeight.SemiBold) },
+                        text = {
+                            Column {
+                                Text("成功: ${r.success}, 失败: ${r.failed}", style = MaterialTheme.typography.bodyMedium)
+                                if (r.lastResponse.isNotBlank()) {
+                                    Spacer(Modifier.height(6.dp))
+//                                    Text("服务器响应:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(r.lastResponse, style = MaterialTheme.typography.bodySmall, maxLines = 4, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                                if (r.errors.isNotEmpty()) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text("错误详情:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+                                    Text(r.errors.take(5).joinToString("\n"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, maxLines = 6)
+                                }
+                            }
+                        },
+                        confirmButton = { TextButton(onClick = { showSyncResult = false }) { Text("关闭") } }
+                    )
                 }
 
                 // Stats

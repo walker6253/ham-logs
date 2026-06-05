@@ -9,6 +9,7 @@ import com.hamlog.data.AppDatabase
 import com.hamlog.data.entity.ContactRecord
 import com.hamlog.data.repository.LogRepository
 import com.hamlog.util.SmartInputParser
+import com.hamlog.util.CloudlogSync
 import com.hamlog.util.BandUtil
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -364,6 +365,25 @@ class LogEntryViewModel(application: Application) : AndroidViewModel(application
                     showSuggestions = false, historicalContacts = null, searchCallsign = "",
                     dismissKeyboards = _uiState.value.dismissKeyboards + 1)
                 persistFormState(_uiState.value)
+                // Auto-upload to Cloudlog if enabled
+                if (AppPreferences.autoUploadEnabled.value && AppPreferences.cloudlogUrl.value.isNotBlank() && AppPreferences.cloudlogApiKey.value.isNotBlank()) {
+                    try {
+                        val newContact = ContactRecord(
+                            dateEpochDay = s.dateEpochDay, callsign = s.callsign.uppercase().trim(),
+                            frequencyMHz = s.frequency.toDoubleOrNull() ?: 0.0, mode = s.mode.trim(),
+                            rstSent = s.rstSent.trim(), rstReceived = s.rstReceived.trim(),
+                            powerTx = s.powerTx.trim(), powerRx = s.powerRx.trim(), notes = s.notes.trim()
+                        )
+                        CloudlogSync.syncContacts(
+                            baseUrl = AppPreferences.cloudlogUrl.value,
+                            apiKey = AppPreferences.cloudlogApiKey.value,
+                            contacts = listOf(newContact),
+                            callsign = AppPreferences.callsign.value,
+                            gridSquare = AppPreferences.gridSquare.value,
+                            stationProfileId = AppPreferences.stationProfileId.value.ifBlank { "1" }
+                        )
+                    } catch (_: Exception) {}
+                }
             } catch (_: Exception) {}
         }
     }
