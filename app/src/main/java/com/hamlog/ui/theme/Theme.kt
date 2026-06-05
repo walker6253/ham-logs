@@ -165,11 +165,15 @@ private val AppShapes = Shapes(
 fun HamLogTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
     val view = LocalView.current
     if (!view.isInEditMode) {
-        val statusBarColor = if (darkTheme) SurfaceDark else AlxBackground
+        val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+        val statusBarColor = colorScheme.background
         SideEffect {
             val window = (view.context as android.app.Activity).window
             window.statusBarColor = statusBarColor.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+            window.navigationBarColor = statusBarColor.toArgb()
+            val insetsController = WindowCompat.getInsetsController(window, view)
+            insetsController.isAppearanceLightStatusBars = !darkTheme
+            insetsController.isAppearanceLightNavigationBars = !darkTheme
         }
     }
     val config = LocalConfiguration.current

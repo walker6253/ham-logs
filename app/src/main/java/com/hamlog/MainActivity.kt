@@ -2,6 +2,7 @@
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ class MainActivity : ComponentActivity() {
         AppPreferences.init(applicationContext)
         com.hamlog.util.EquipmentManager.init(applicationContext)
         actionBar?.hide()
+        enableEdgeToEdge()
         installSplashScreen().apply { setKeepOnScreenCondition { false } }
         setContent {
             HamLogTheme {
