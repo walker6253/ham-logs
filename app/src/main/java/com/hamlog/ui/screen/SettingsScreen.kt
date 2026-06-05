@@ -372,11 +372,11 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
                             value = gridText,
-                            onValueChange = { val v = it.uppercase(); gridText = v; AppPreferences.setGridSquare(v) },
+                            onValueChange = { gridText = it; AppPreferences.setGridSquare(it) },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             singleLine = true,
                             textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = NotoSerif),
-                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+                            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.None),
                             shape = RoundedCornerShape(8.dp),
                             colors = hamFieldColors()
                         )
@@ -436,79 +436,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Spacer(Modifier.height(4.dp))
                         Surface(onClick={showRigAdd=true},shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f),modifier=Modifier.fillMaxWidth()){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加设备",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
                     }
-                }
-
-                // Stats
-                SettingsCard {
-                    Row(Modifier.fillMaxWidth().padding(16.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                        Text("\u901a\u8054\u603b\u6570", style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            "${uiState.totalContacts} \u6761",
-                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif),
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
-
-                // Export
-                Button(
-                    onClick = { viewModel.exportAdif() },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    enabled = !uiState.isExporting && uiState.totalContacts > 0,
-                    shape = MaterialTheme.shapes.small,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    if (uiState.isExporting) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
-                        Spacer(Modifier.width(8.dp))
-                    } else {
-                        Icon(Icons.Default.FileDownload, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text(if (uiState.isExporting) "\u5bfc\u51fa\u4e2d..." else "\u5bfc\u51fa ADIF \u65e5\u5fd7", fontWeight = FontWeight.Medium)
-                }
-
-                // Import
-                OutlinedButton(
-                    onClick = { adifPicker.launch(arrayOf("text/plain", "application/octet-stream", "*/*")) },
-                    modifier = Modifier.fillMaxWidth().height(48.dp),
-                    enabled = !uiState.isImporting,
-                    shape = MaterialTheme.shapes.small,
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    if (uiState.isImporting) {
-                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                    } else {
-                        Icon(Icons.Default.FileUpload, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text(if (uiState.isImporting) "\u5bfc\u5165\u4e2d..." else "\u5bfc\u5165 ADIF \u65e5\u5fd7", fontWeight = FontWeight.Medium)
-                }
-
-                Spacer(Modifier.height(4.dp))
-
-                // Check Update
-                OutlinedButton(
-                    onClick = {
-                        isCheckingUpdate = true
-                        updateScope.launch {
-                            val info = com.hamlog.util.UpdateChecker.checkForUpdate(context)
-                            updateInfo = info
-                            isCheckingUpdate = false
-                            showUpdateDialog = true
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth().height(40.dp),
-                    enabled = !isCheckingUpdate,
-                    shape = MaterialTheme.shapes.small,
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    if (isCheckingUpdate) {
-                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                    }
-                    Text(if (isCheckingUpdate) "检查中..." else "检查更新", fontSize = 13.sp)
                 }
 
                 Spacer(Modifier.height(8.dp))
@@ -648,6 +575,79 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         },
                         confirmButton = { TextButton(onClick = { showSyncResult = false }) { Text("关闭") } }
                     )
+                }
+
+                // Stats
+                SettingsCard {
+                    Row(Modifier.fillMaxWidth().padding(16.dp), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                        Text("\u901a\u8054\u603b\u6570", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "${uiState.totalContacts} \u6761",
+                            style = MaterialTheme.typography.titleMedium.copy(fontFamily = NotoSerif),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+
+                // Export
+                Button(
+                    onClick = { viewModel.exportAdif() },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    enabled = !uiState.isExporting && uiState.totalContacts > 0,
+                    shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (uiState.isExporting) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        Spacer(Modifier.width(8.dp))
+                    } else {
+                        Icon(Icons.Default.FileDownload, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (uiState.isExporting) "\u5bfc\u51fa\u4e2d..." else "\u5bfc\u51fa ADIF \u65e5\u5fd7", fontWeight = FontWeight.Medium)
+                }
+
+                // Import
+                OutlinedButton(
+                    onClick = { adifPicker.launch(arrayOf("text/plain", "application/octet-stream", "*/*")) },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    enabled = !uiState.isImporting,
+                    shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (uiState.isImporting) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                    } else {
+                        Icon(Icons.Default.FileUpload, null, Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (uiState.isImporting) "\u5bfc\u5165\u4e2d..." else "\u5bfc\u5165 ADIF \u65e5\u5fd7", fontWeight = FontWeight.Medium)
+                }
+
+                Spacer(Modifier.height(4.dp))
+
+                // Check Update
+                OutlinedButton(
+                    onClick = {
+                        isCheckingUpdate = true
+                        updateScope.launch {
+                            val info = com.hamlog.util.UpdateChecker.checkForUpdate(context)
+                            updateInfo = info
+                            isCheckingUpdate = false
+                            showUpdateDialog = true
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(40.dp),
+                    enabled = !isCheckingUpdate,
+                    shape = MaterialTheme.shapes.small,
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    if (isCheckingUpdate) {
+                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    Text(if (isCheckingUpdate) "检查中..." else "检查更新", fontSize = 13.sp)
                 }
 
                 Spacer(Modifier.height(4.dp))

@@ -22,7 +22,7 @@ object AppPreferences {
 _gridSquare.value = p.getString("gridSquare", "") ?: ""
         _cloudlogUrl.value = p.getString("cloudlogUrl", "") ?: ""
         _cloudlogApiKey.value = p.getString("cloudlogApiKey", "") ?: ""
-        _stationProfileId.value = p.getString("stationProfileId", "") ?: ""
+        _stationProfileId.value = p.getString("stationProfileId", "1") ?: "1"
         _autoUploadEnabled.value = p.getBoolean("autoUploadEnabled", false)
     }
 
@@ -49,7 +49,7 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
     private val _cloudlogApiKey = MutableStateFlow("")
     val cloudlogApiKey: StateFlow<String> = _cloudlogApiKey.asStateFlow()
 
-    private val _stationProfileId = MutableStateFlow("")
+    private val _stationProfileId = MutableStateFlow("1")
     val stationProfileId: StateFlow<String> = _stationProfileId.asStateFlow()
 
     private val _autoUploadEnabled = MutableStateFlow(false)
@@ -102,7 +102,7 @@ _gridSquare.value = p.getString("gridSquare", "") ?: ""
     }
 
     fun setGridSquare(grid: String) {
-        _gridSquare.value = grid.uppercase().trim()
+        _gridSquare.value = grid.trim()
         prefs?.edit()?.putString("gridSquare", _gridSquare.value)?.apply()
     }
 }
