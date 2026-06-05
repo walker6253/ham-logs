@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.HelpOutline
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.GridOn
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.Popup
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -718,7 +720,43 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         }
                         Spacer(Modifier.height(4.dp))
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text("保存后自动上传", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("保存后自动上传", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                var showAutoUploadHelp by remember { mutableStateOf(false) }
+                                Box {
+                                    IconButton(
+                                        onClick = { showAutoUploadHelp = true },
+                                        modifier = Modifier.size(20.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Outlined.HelpOutline,
+                                            contentDescription = "帮助",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                    if (showAutoUploadHelp) {
+                                        Popup(
+                                            onDismissRequest = { showAutoUploadHelp = false },
+                                            alignment = Alignment.TopEnd
+                                        ) {
+                                            Card(
+                                                modifier = Modifier.padding(16.dp).widthIn(max = 280.dp),
+                                                shape = RoundedCornerShape(12.dp),
+                                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.inverseSurface),
+                                                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                                            ) {
+                                                Text(
+                                                    "开启后如果保存的通联日志有错误，则需要手动在 Cloudlog 后台删除。Cloudlog 未提供删除 API，所以无法自动删除。",
+                                                    modifier = Modifier.padding(14.dp),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.inverseOnSurface
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                             Switch(
                                 checked = autoUploadEnabled,
                                 onCheckedChange = { autoUploadEnabled = it; AppPreferences.setAutoUploadEnabled(it) },
