@@ -549,7 +549,22 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                 refreshEquipment()
                             }
                         ) { cat, _ ->
-                            Column(Modifier.padding(bottom=6.dp)) {
+                            val brandDismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = {
+                                    if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                        EquipmentManager.removeRigBrand(cat.brand)
+                                        refreshEquipment()
+                                        true
+                                    } else false
+                                }
+                            )
+                            SwipeToDismissBox(
+                                state = brandDismissState,
+                                backgroundContent = {},
+                                enableDismissFromStartToEnd = true,
+                                enableDismissFromEndToStart = true
+                            ) {
+                                Column(Modifier.padding(bottom=6.dp)) {
                                 Row(Modifier.fillMaxWidth().height(28.dp).padding(horizontal=4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(cat.brand, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
                                     Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
@@ -590,6 +605,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                         }
                                     }
                                 }
+                            }
                             }
                         }
                         Spacer(Modifier.height(4.dp))
