@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Place
@@ -63,6 +64,9 @@ import androidx.core.content.ContextCompat
 import java.time.ZoneId
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.OffsetMapping
@@ -493,10 +497,25 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             items = antennaList.toList(),
                             onMove = { from, to -> EquipmentManager.moveAntenna(from, to); refreshEquipment() }
                         ) { item, _ ->
-                            Row(Modifier.fillMaxWidth().height(36.dp), verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
-                                Text(item, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=8.dp))
-                                IconButton(onClick = { EquipmentManager.removeAntenna(item); refreshEquipment() }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, "删除", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.error.copy(alpha=0.6f)) }
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = {
+                                    if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                        EquipmentManager.removeAntenna(item)
+                                        refreshEquipment()
+                                        true
+                                    } else false
+                                }
+                            )
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = {},
+                                enableDismissFromStartToEnd = true,
+                                enableDismissFromEndToStart = true
+                            ) {
+                                Row(Modifier.fillMaxWidth().height(36.dp).padding(horizontal=4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=8.dp))
+                                    Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                }
                             }
                         }
                         Spacer(Modifier.height(4.dp))
@@ -512,9 +531,9 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             }
                         ) { cat, _ ->
                             Column(Modifier.padding(bottom=6.dp)) {
-                                Row(Modifier.fillMaxWidth().height(28.dp), verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                Row(Modifier.fillMaxWidth().height(28.dp).padding(horizontal=4.dp), verticalAlignment = Alignment.CenterVertically) {
                                     Text(cat.brand, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
+                                    Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
                                 }
                                 DragReorderableColumn(
                                     items = cat.models,
@@ -531,10 +550,25 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                         }
                                     }
                                 ) { model, _ ->
-                                    Row(Modifier.fillMaxWidth().padding(start=8.dp).height(32.dp), verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
-                                        Text(model, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
-                                        IconButton(onClick = { EquipmentManager.removeRigModel(cat.brand, model); refreshEquipment() }, modifier = Modifier.size(20.dp)) { Icon(Icons.Default.Close, "删除", Modifier.size(12.dp), tint = MaterialTheme.colorScheme.error.copy(alpha=0.5f)) }
+                                    val dismissState = rememberSwipeToDismissBoxState(
+                                        confirmValueChange = {
+                                            if (it == SwipeToDismissBoxValue.EndToStart || it == SwipeToDismissBoxValue.StartToEnd) {
+                                                EquipmentManager.removeRigModel(cat.brand, model)
+                                                refreshEquipment()
+                                                true
+                                            } else false
+                                        }
+                                    )
+                                    SwipeToDismissBox(
+                                        state = dismissState,
+                                        backgroundContent = {},
+                                        enableDismissFromStartToEnd = true,
+                                        enableDismissFromEndToStart = true
+                                    ) {
+                                        Row(Modifier.fillMaxWidth().padding(start=8.dp).height(32.dp).padding(horizontal=4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                            Text(model, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
+                                            Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                        }
                                     }
                                 }
                             }
