@@ -398,7 +398,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Badge, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("姓名", style = MaterialTheme.typography.titleSmall)
+                            Text("OP", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(6.dp))
                         OutlinedTextField(
