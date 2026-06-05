@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
 import com.hamlog.ui.theme.NotoSerif
@@ -31,6 +32,14 @@ import com.hamlog.AppPreferences
 import com.hamlog.viewmodel.DateItem
 import com.hamlog.viewmodel.MainViewModel
 import com.hamlog.ui.component.AlxDatePickerDialog
+import com.hamlog.util.UpdateChecker
+import com.hamlog.util.UpdateInfo
+import android.widget.Toast
+import android.content.Context
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +63,118 @@ fun MainScreen(
     val useTwoColumns = widthClass == WindowWidthSizeClass.Expanded
     val uiState by viewModel.uiState.collectAsState()
     val userCallsign by AppPreferences.callsign.collectAsState()
+
+    // Auto update check
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val lastCheckDate by AppPreferences.lastUpdateCheckDate.collectAsState()
+    val ignoredDate by AppPreferences.updateIgnoredDate.collectAsState()
+    var autoUpdateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+    var showAutoUpdateDialog by remember { mutableStateOf(false) }
+    var isDownloadingUpdate by remember { mutableStateOf(false) }
+    var downloadingProgress by remember { mutableStateOf<Float?>(null) }
+
+    LaunchedEffect(Unit) {
+        val today = LocalDate.now().toString()
+        if (lastCheckDate != today) {
+            val info = UpdateChecker.checkForUpdate(context)
+            AppPreferences.setLastUpdateCheckDate(today)
+            if (info.hasUpdate && ignoredDate != today) {
+                autoUpdateInfo = info
+                showAutoUpdateDialog = true
+            }
+        }
+    }
+
+    // Auto update dialog
+    if (showAutoUpdateDialog && autoUpdateInfo != null) {
+        val info = autoUpdateInfo!!
+        AlertDialog(
+            onDismissRequest = { showAutoUpdateDialog = false },
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("发现新版本 v${info.latestVersion}", fontWeight = FontWeight.SemiBold) },
+            text = {
+                Column {
+                    Text("当前版本: v${info.currentVersion}", style = MaterialTheme.typography.bodyMedium)
+                    if (info.body.isNotBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(info.body.take(300), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    if (isDownloadingUpdate && downloadingProgress != null) {
+                        Spacer(Modifier.height(12.dp))
+                        LinearProgressIndicator(progress = { downloadingProgress!! }, modifier = Modifier.fillMaxWidth())
+                        Spacer(Modifier.height(4.dp))
+                        Text("下载中 ${(downloadingProgress!! * 100).toInt()}%", fontSize = 12.sp)
+                    }
+                }
+            },
+            confirmButton = {
+                if (!isDownloadingUpdate) {
+                    TextButton(onClick = {
+                        if (info.apkDownloadUrl.isNotBlank()) {
+                            isDownloadingUpdate = true
+                            downloadingProgress = 0f
+                            scope.launch {
+                                try {
+                                    val apkFile = java.io.File(context.cacheDir, "update.apk")
+                                    val url = java.net.URL(info.apkDownloadUrl)
+                                    val conn = url.openConnection() as java.net.HttpURLConnection
+                                    conn.connectTimeout = 30000
+                                    conn.readTimeout = 30000
+                                    conn.connect()
+                                    val total = conn.contentLength.toLong()
+                                    var downloaded = 0L
+                                    conn.inputStream.use { input ->
+                                        apkFile.outputStream().use { output ->
+                                            val buffer = ByteArray(8192)
+                                            var bytes = input.read(buffer)
+                                            while (bytes >= 0) {
+                                                output.write(buffer, 0, bytes)
+                                                downloaded += bytes
+                                                if (total > 0) downloadingProgress = downloaded.toFloat() / total
+                                                bytes = input.read(buffer)
+                                            }
+                                        }
+                                    }
+                                    val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apkFile)
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW)
+                                    intent.setDataAndType(uri, "application/vnd.android.package-archive")
+                                    intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    context.startActivity(intent)
+                                    showAutoUpdateDialog = false
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_LONG).show()
+                                } finally {
+                                    isDownloadingUpdate = false
+                                    downloadingProgress = null
+                                }
+                            }
+                        }
+                    }) {
+                        Text("立即更新")
+                    }
+                }
+            },
+            dismissButton = {
+                if (!isDownloadingUpdate) {
+                    Row {
+                        TextButton(onClick = {
+                            AppPreferences.setUpdateIgnoredDate(LocalDate.now().toString())
+                            showAutoUpdateDialog = false
+                        }) {
+                            Text("忽略", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Spacer(Modifier.width(4.dp))
+                        TextButton(onClick = { showAutoUpdateDialog = false }) {
+                            Text("关闭")
+                        }
+                    }
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
