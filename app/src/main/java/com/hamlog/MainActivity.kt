@@ -15,6 +15,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         AppPreferences.init(applicationContext)
         com.hamlog.util.EquipmentManager.init(applicationContext)
+        actionBar?.hide()
         setContent {
             HamLogTheme {
                 Surface(
