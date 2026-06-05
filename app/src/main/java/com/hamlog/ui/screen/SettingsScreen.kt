@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.Place
@@ -36,13 +37,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.hamlog.ui.theme.LocalWindowSizeClass
@@ -63,6 +70,65 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import android.widget.Toast
 import com.hamlog.util.CloudlogSync
+
+@Composable
+fun <T> DragReorderableColumn(
+    items: List<T>,
+    modifier: Modifier = Modifier,
+    onMove: (Int, Int) -> Unit,
+    itemContent: @Composable (T, Int) -> Unit
+) {
+    var draggedIndex by remember { mutableStateOf<Int?>(null) }
+    var draggedItemStartIndex by remember { mutableStateOf(0) }
+    var dragOffset by remember { mutableStateOf(0f) }
+    val itemHeight = 36.dp
+    val itemHeightPx = with(LocalDensity.current) { itemHeight.toPx() }
+
+    Column(modifier) {
+        items.forEachIndexed { index, item ->
+            val isDragging = draggedIndex == index
+            Box(
+                Modifier
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .graphicsLayer {
+                        translationY = if (isDragging) dragOffset else 0f
+                        alpha = if (isDragging) 0.9f else 1f
+                        scaleX = if (isDragging) 1.03f else 1f
+                        scaleY = if (isDragging) 1.03f else 1f
+                    }
+                    .pointerInput(item) {
+                        detectDragGesturesAfterLongPress(
+                            onDragStart = {
+                                draggedIndex = index
+                                draggedItemStartIndex = index
+                                dragOffset = 0f
+                            },
+                            onDragEnd = {
+                                val target = (dragOffset / itemHeightPx).roundToInt()
+                                val newIndex = (draggedItemStartIndex + target).coerceIn(0, items.lastIndex)
+                                if (newIndex != draggedItemStartIndex) {
+                                    onMove(draggedItemStartIndex, newIndex)
+                                }
+                                draggedIndex = null
+                                dragOffset = 0f
+                            },
+                            onDragCancel = {
+                                draggedIndex = null
+                                dragOffset = 0f
+                            },
+                            onDrag = { change, offset ->
+                                change.consume()
+                                dragOffset += offset.y
+                            }
+                        )
+                    }
+            ) {
+                itemContent(item, index)
+            }
+        }
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -417,22 +483,53 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 }
 
                 // Equipment Maintenance
-                @OptIn(ExperimentalLayoutApi::class)
                 SettingsCard {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Build,null,Modifier.size(18.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(8.dp));Text("设备维护",style=MaterialTheme.typography.titleSmall) }
                         Spacer(Modifier.height(8.dp))
                         Text("天馈",style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(4.dp))
-                        FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
-                            antennaList.forEach { item -> Surface(shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.surfaceVariant,modifier=Modifier.clickable{EquipmentManager.removeAntenna(item);refreshEquipment()}){Row(Modifier.padding(start=8.dp,end=6.dp,top=4.dp,bottom=4.dp),verticalAlignment=Alignment.CenterVertically){Text(item,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.width(4.dp));Icon(Icons.Default.Close,null,Modifier.size(10.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.5f))}} }
+                        DragReorderableColumn(
+                            items = antennaList.toList(),
+                            onMove = { from, to -> EquipmentManager.moveAntenna(from, to); refreshEquipment() }
+                        ) { item, _ ->
+                            Row(Modifier.fillMaxWidth().height(36.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                Text(item, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=8.dp))
+                                IconButton(onClick = { EquipmentManager.removeAntenna(item); refreshEquipment() }, modifier = Modifier.size(24.dp)) { Icon(Icons.Default.Close, "删除", Modifier.size(14.dp), tint = MaterialTheme.colorScheme.error.copy(alpha=0.6f)) }
                             }
+                        }
                         Spacer(Modifier.height(4.dp))
-                        Surface(onClick={showAntennaAdd=true},modifier=Modifier.fillMaxWidth(),shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f)){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
+                        Surface(onClick={showAntennaAdd=true},modifier=Modifier.fillMaxWidth(),shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f)){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加天馈",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
                         Spacer(Modifier.height(12.dp))
                         Text("设备",style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.height(4.dp))
-                        rigList.forEach { cat -> Column(Modifier.padding(bottom=8.dp)){Text(cat.brand,style=MaterialTheme.typography.labelSmall,fontWeight=FontWeight.Medium,color=MaterialTheme.colorScheme.onSurface);Spacer(Modifier.height(4.dp));FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){cat.models.forEach{model->Surface(shape=MaterialTheme.shapes.extraSmall,color=MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.6f),modifier=Modifier.clickable{EquipmentManager.removeRigModel(cat.brand,model);refreshEquipment()}){Row(Modifier.padding(start=6.dp,end=6.dp,top=3.dp,bottom=3.dp),verticalAlignment=Alignment.CenterVertically){Text(model,style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.onSurfaceVariant);Spacer(Modifier.width(3.dp));Icon(Icons.Default.Close,null,Modifier.size(9.dp),tint=MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))}}}}} }
+                        rigList.forEach { cat ->
+                            Column(Modifier.padding(bottom=6.dp)) {
+                                Text(cat.brand, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface, modifier = Modifier.padding(vertical=2.dp))
+                                DragReorderableColumn(
+                                    items = cat.models,
+                                    onMove = { from, to ->
+                                        val newList = rigList.toList().toMutableList()
+                                        val idx = newList.indexOfFirst { it.brand == cat.brand }
+                                        if (idx >= 0) {
+                                            val newModels = cat.models.toMutableList()
+                                            val m = newModels.removeAt(from)
+                                            newModels.add(to, m)
+                                            newList[idx] = cat.copy(models = newModels)
+                                            EquipmentManager.setRigs(newList)
+                                            refreshEquipment()
+                                        }
+                                    }
+                                ) { model, _ ->
+                                    Row(Modifier.fillMaxWidth().padding(start=8.dp).height(32.dp), verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(Icons.Default.DragHandle, "拖拽", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.4f))
+                                        Text(model, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f).padding(horizontal=4.dp))
+                                        IconButton(onClick = { EquipmentManager.removeRigModel(cat.brand, model); refreshEquipment() }, modifier = Modifier.size(20.dp)) { Icon(Icons.Default.Close, "删除", Modifier.size(12.dp), tint = MaterialTheme.colorScheme.error.copy(alpha=0.5f)) }
+                                    }
+                                }
+                            }
+                        }
                         Spacer(Modifier.height(4.dp))
                         Surface(onClick={showRigAdd=true},shape=MaterialTheme.shapes.small,color=MaterialTheme.colorScheme.primary.copy(alpha=0.1f),modifier=Modifier.fillMaxWidth()){Row(Modifier.padding(horizontal=8.dp,vertical=4.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Add,null,Modifier.size(12.dp),tint=MaterialTheme.colorScheme.primary);Spacer(Modifier.width(4.dp));Text("添加设备",style=MaterialTheme.typography.labelSmall,color=MaterialTheme.colorScheme.primary)}}
                     }
