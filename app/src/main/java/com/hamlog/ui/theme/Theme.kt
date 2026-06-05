@@ -4,7 +4,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.ui.text.TextStyle
@@ -160,6 +163,15 @@ private val AppShapes = Shapes(
 // ── Theme entry point ─────────────────────────────────────────────────────────
 @Composable
 fun HamLogTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        val statusBarColor = if (darkTheme) SurfaceDark else AlxBackground
+        SideEffect {
+            val window = (view.context as android.app.Activity).window
+            window.statusBarColor = statusBarColor.toArgb()
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
     val config = LocalConfiguration.current
     val widthClass = when {
         config.screenWidthDp < 600 -> WindowWidthSizeClass.Compact
