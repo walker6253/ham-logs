@@ -1,4 +1,4 @@
-﻿package com.hamlog.viewmodel
+package com.hamlog.viewmodel
 
 import android.app.Application
 import android.content.Intent
@@ -12,7 +12,9 @@ import com.hamlog.data.AppDatabase
 import com.hamlog.data.entity.ContactRecord
 import com.hamlog.data.repository.LogRepository
 import com.hamlog.util.AdifExporter
+import com.hamlog.util.CloudlogSync
 import com.hamlog.util.AdifImporter
+import com.hamlog.util.SyncResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,7 +28,8 @@ data class SettingsUiState(
     val totalContacts: Int = 0,
     val isExporting: Boolean = false, val exportComplete: Boolean = false,
     val exportUri: Uri? = null, val selectedTimezone: ZoneId = ZoneId.of("Asia/Shanghai"),
-    val isImporting: Boolean = false, val importResult: AdifImporter.ImportResult? = null
+    val isImporting: Boolean = false, val importResult: AdifImporter.ImportResult? = null,
+    val isSyncing: Boolean = false, val syncResult: SyncResult? = null
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -102,6 +105,36 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
+    suspend fun getAllContactsForSync(): List<ContactRecord> {
+        return repository.getAllContacts().first()
+    }
+
+    fun syncToCloudlog() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isSyncing = true, syncResult = null)
+            try {
+                val contacts = repository.getAllContacts().first()
+                val result = CloudlogSync.syncContacts(
+                    baseUrl = AppPreferences.cloudlogUrl.value,
+                    apiKey = AppPreferences.cloudlogApiKey.value,
+                    contacts = contacts,
+                    callsign = AppPreferences.callsign.value,
+                    gridSquare = AppPreferences.gridSquare.value,
+                    stationProfileId = AppPreferences.stationProfileId.value.ifBlank { "1" },
+                    onProgress = { cur, total -> }
+                )
+                _uiState.value = _uiState.value.copy(isSyncing = false, syncResult = result)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isSyncing = false,
+                    syncResult = SyncResult(errors = listOf(e.message ?: "Unknown error"))
+                )
+            }
+        }
+    }
+
+    fun dismissSyncResult() { _uiState.value = _uiState.value.copy(syncResult = null) }
 
     fun dismissImportResult() { _uiState.value = _uiState.value.copy(importResult = null) }
 }

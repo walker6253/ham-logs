@@ -1,0 +1,140 @@
+﻿package com.hamlog.util
+
+import com.hamlog.data.entity.ContactRecord
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+
+data class SyncResult(
+    val success: Int = 0,
+    val failed: Int = 0,
+    val skipped: Int = 0,
+    val errors: List<String> = emptyList(),
+    val lastResponse: String = ""
+)
+
+object CloudlogSync {
+
+    private fun frequencyToBand(freqMHz: Double): String = when {
+        freqMHz >= 1.8 && freqMHz < 2.0 -> "160m"
+        freqMHz >= 3.5 && freqMHz < 4.0 -> "80m"
+        freqMHz >= 5.0 && freqMHz < 5.5 -> "60m"
+        freqMHz >= 7.0 && freqMHz < 7.3 -> "40m"
+        freqMHz >= 10.0 && freqMHz < 10.2 -> "30m"
+        freqMHz >= 14.0 && freqMHz < 14.35 -> "20m"
+        freqMHz >= 18.0 && freqMHz < 18.2 -> "17m"
+        freqMHz >= 21.0 && freqMHz < 21.45 -> "15m"
+        freqMHz >= 24.89 && freqMHz < 24.99 -> "12m"
+        freqMHz >= 28.0 && freqMHz < 29.7 -> "10m"
+        freqMHz >= 50.0 && freqMHz < 54.0 -> "6m"
+        freqMHz >= 144.0 && freqMHz < 148.0 -> "2m"
+        freqMHz >= 430.0 && freqMHz < 450.0 -> "70cm"
+        else -> ""
+    }
+
+    private fun formatDate(epochMs: Long): String {
+        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        return sdf.format(Date(epochMs))
+    }
+
+    private fun formatTime(epochMs: Long): String {
+        val sdf = SimpleDateFormat("HH:mm", Locale.US)
+        sdf.timeZone = TimeZone.getTimeZone("UTC")
+        return sdf.format(Date(epochMs))
+    }
+
+    suspend fun syncContacts(
+        baseUrl: String,
+        apiKey: String,
+        contacts: List<ContactRecord>,
+        callsign: String = "",
+        gridSquare: String = "",
+        stationProfileId: String = "1",
+        onProgress: (Int, Int) -> Unit = { _, _ -> }
+    ): SyncResult = withContext(Dispatchers.IO) {
+        var success = 0
+        var failed = 0
+        var lastResponseBody = ""
+        val errors = mutableListOf<String>()
+
+        val url = baseUrl.trimEnd('/') + "/index.php/api/qso"
+        val total = contacts.size
+
+        contacts.forEachIndexed { index, contact ->
+            try {
+                val json = JSONObject().apply {
+                    put("key", apiKey)
+                    try { put("station_profile_id", stationProfileId.toInt()) } catch (_: Exception) { put("station_profile_id", 1) }
+                    put("call", contact.callsign.uppercase().trim())
+                    put("band", frequencyToBand(contact.frequencyMHz))
+                    put("mode", contact.mode.uppercase().trim())
+                    put("freq", contact.frequencyMHz.toString())
+                    put("rst_sent", contact.rstSent.trim())
+                    put("rst_rcvd", contact.rstReceived.trim())
+                    if (contact.powerTx.isNotBlank()) put("tx_pwr", contact.powerTx.trim().trimEnd('W', 'w').trim())
+                    if (contact.powerRx.isNotBlank()) put("rx_pwr", contact.powerRx.trim().trimEnd('W', 'w').trim())
+                    if (contact.notes.isNotBlank()) put("comment", contact.notes.trim())
+                    put("qso_date", formatDate(contact.createdAt))
+                    put("time_on", formatTime(contact.createdAt))
+                    if (gridSquare.isNotBlank()) put("gridsquare", gridSquare)
+                    if (callsign.isNotBlank()) put("station_callsign", callsign.uppercase().trim())
+                }
+
+                val connection = URL(url).openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.setRequestProperty("Accept", "application/json")
+                connection.doOutput = true
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
+
+                OutputStreamWriter(connection.outputStream).use { it.write(json.toString()) }
+
+                val code = connection.responseCode
+                val respBody = try { connection.inputStream.bufferedReader().use { it.readText() } } catch (_: Exception) { "" }
+                connection.disconnect()
+
+                if (code in 200..299 && !respBody.contains("failed")) {
+                    success++
+                    lastResponseBody = respBody
+                } else {
+                    failed++
+                    errors.add(contact.callsign + ": HTTP " + code + " " + respBody.take(200))
+                }
+            } catch (e: Exception) {
+                failed++
+                errors.add(contact.callsign + ": " + (e.message ?: "unknown"))
+            }
+
+            onProgress(index + 1, total)
+        }
+
+        SyncResult(success = success, failed = failed, errors = errors, lastResponse = lastResponseBody)
+    }
+
+    data class ConnectionTestResult(val ok: Boolean, val message: String = "")
+
+    suspend fun testConnection(baseUrl: String, apiKey: String): ConnectionTestResult = withContext(Dispatchers.IO) {
+        try {
+            val url = baseUrl.trimEnd('/') + "/index.php/api/qso"
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.requestMethod = "GET"
+            connection.setRequestProperty("Accept", "application/json")
+            connection.connectTimeout = 10000
+            connection.readTimeout = 10000
+            val code = connection.responseCode
+            connection.disconnect()
+            ConnectionTestResult(code in 200..499, "HTTP $code")
+        } catch (e: Exception) {
+            ConnectionTestResult(false, e.message ?: "")
+        }
+    }
+}

@@ -19,7 +19,11 @@ object AppPreferences {
         _opName.value = p.getString("opName", "") ?: ""
         _equipment.value = p.getString("equipment", "") ?: ""
         _location.value = p.getString("location", "") ?: ""
-        _gridSquare.value = p.getString("gridSquare", "") ?: ""
+_gridSquare.value = p.getString("gridSquare", "") ?: ""
+        _cloudlogUrl.value = p.getString("cloudlogUrl", "") ?: ""
+        _cloudlogApiKey.value = p.getString("cloudlogApiKey", "") ?: ""
+        _stationProfileId.value = p.getString("stationProfileId", "") ?: ""
+        _autoUploadEnabled.value = p.getBoolean("autoUploadEnabled", false)
     }
 
     private val _timezone = MutableStateFlow(ZoneId.of("Asia/Shanghai"))
@@ -39,6 +43,18 @@ object AppPreferences {
 
     private val _gridSquare = MutableStateFlow("")
     val gridSquare: StateFlow<String> = _gridSquare.asStateFlow()
+    private val _cloudlogUrl = MutableStateFlow("")
+    val cloudlogUrl: StateFlow<String> = _cloudlogUrl.asStateFlow()
+
+    private val _cloudlogApiKey = MutableStateFlow("")
+    val cloudlogApiKey: StateFlow<String> = _cloudlogApiKey.asStateFlow()
+
+    private val _stationProfileId = MutableStateFlow("")
+    val stationProfileId: StateFlow<String> = _stationProfileId.asStateFlow()
+
+    private val _autoUploadEnabled = MutableStateFlow(false)
+    val autoUploadEnabled: StateFlow<Boolean> = _autoUploadEnabled.asStateFlow()
+
 
     fun setTimezone(zoneId: ZoneId) {
         _timezone.value = zoneId
@@ -63,6 +79,26 @@ object AppPreferences {
     fun setLocation(loc: String) {
         _location.value = loc.trim()
         prefs?.edit()?.putString("location", _location.value)?.apply()
+    }
+
+    fun setCloudlogUrl(url: String) {
+        _cloudlogUrl.value = url.trim()
+        prefs?.edit()?.putString("cloudlogUrl", _cloudlogUrl.value)?.apply()
+    }
+
+    fun setCloudlogApiKey(key: String) {
+        _cloudlogApiKey.value = key.trim()
+        prefs?.edit()?.putString("cloudlogApiKey", _cloudlogApiKey.value)?.apply()
+    }
+
+    fun setStationProfileId(id: String) {
+        _stationProfileId.value = id.trim()
+        prefs?.edit()?.putString("stationProfileId", _stationProfileId.value)?.apply()
+    }
+
+    fun setAutoUploadEnabled(enabled: Boolean) {
+        _autoUploadEnabled.value = enabled
+        prefs?.edit()?.putBoolean("autoUploadEnabled", enabled)?.apply()
     }
 
     fun setGridSquare(grid: String) {

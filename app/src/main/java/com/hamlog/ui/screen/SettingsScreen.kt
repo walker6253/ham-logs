@@ -54,6 +54,15 @@ import com.hamlog.R
 import com.hamlog.viewmodel.SettingsViewModel
 import androidx.core.content.ContextCompat
 import java.time.ZoneId
+import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import android.widget.Toast
+import com.hamlog.util.CloudlogSync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -82,6 +91,27 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
     LaunchedEffect(userEquipment) { equipmentText = userEquipment }
     LaunchedEffect(userLocation) { locationText = userLocation }
     LaunchedEffect(userGrid) { gridText = userGrid }
+
+
+    // Cloudlog state
+    val cloudlogUrlPref by AppPreferences.cloudlogUrl.collectAsState()
+    var cloudlogUrl by remember { mutableStateOf(cloudlogUrlPref) }
+    LaunchedEffect(cloudlogUrlPref) { cloudlogUrl = cloudlogUrlPref }
+    val cloudlogApiKeyPref by AppPreferences.cloudlogApiKey.collectAsState()
+    var cloudlogApiKey by remember { mutableStateOf(cloudlogApiKeyPref) }
+    LaunchedEffect(cloudlogApiKeyPref) { cloudlogApiKey = cloudlogApiKeyPref }
+    var cloudlogKeyFocused by remember { mutableStateOf(false) }
+    val stationProfileIdPref by AppPreferences.stationProfileId.collectAsState()
+    var stationProfileId by remember { mutableStateOf(stationProfileIdPref) }
+    LaunchedEffect(stationProfileIdPref) { stationProfileId = stationProfileIdPref }
+    val autoUploadPref by AppPreferences.autoUploadEnabled.collectAsState()
+    var autoUploadEnabled by remember { mutableStateOf(autoUploadPref) }
+    LaunchedEffect(autoUploadPref) { autoUploadEnabled = autoUploadPref }
+    var isSyncing by remember { mutableStateOf(false) }
+    var isTestingConn by remember { mutableStateOf(false) }
+    var syncResult by remember { mutableStateOf<com.hamlog.util.SyncResult?>(null) }
+    var showSyncResult by remember { mutableStateOf(false) }
+    var syncProgress by remember { mutableStateOf(0 to 0) }
 
     LaunchedEffect(uiState.exportComplete, uiState.exportUri) {
         if (uiState.exportComplete && uiState.exportUri != null) {
@@ -479,6 +509,145 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Spacer(Modifier.width(8.dp))
                     }
                     Text(if (isCheckingUpdate) "检查中..." else "检查更新", fontSize = 13.sp)
+                }
+
+                Spacer(Modifier.height(8.dp))
+                // Cloudlog Sync
+                SettingsCard {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Cloud, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Cloudlog 同步", style = MaterialTheme.typography.titleSmall)
+                        }
+                        Spacer(Modifier.height(6.dp))
+                        Text("API 地址", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = cloudlogUrl,
+                            onValueChange = { cloudlogUrl = it; AppPreferences.setCloudlogUrl(it) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = hamFieldColors()
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        val maskTransformation = remember {
+                            object : VisualTransformation {
+                                override fun filter(text: AnnotatedString): TransformedText {
+                                    val raw = text.text
+                                    if (raw.length <= 10) return TransformedText(text, OffsetMapping.Identity)
+                                    val maskCount = minOf(7, raw.length - 4)
+                                    val prefixLen = (raw.length - maskCount) / 2
+                                    val masked = raw.substring(0, prefixLen) + "*".repeat(maskCount) + raw.substring(prefixLen + maskCount)
+                                    return TransformedText(AnnotatedString(masked), OffsetMapping.Identity)
+                                }
+                            }
+                        }
+                        Text("API Key", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = cloudlogApiKey,
+                            onValueChange = { cloudlogApiKey = it; AppPreferences.setCloudlogApiKey(it) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp).onFocusChanged { cloudlogKeyFocused = it.isFocused },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = hamFieldColors(),
+                            visualTransformation = if (cloudlogKeyFocused) VisualTransformation.None else maskTransformation
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text("台站 ID", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = stationProfileId,
+                            onValueChange = { stationProfileId = it; AppPreferences.setStationProfileId(it) },
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodySmall,
+                            shape = RoundedCornerShape(8.dp),
+                            colors = hamFieldColors()
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text("保存后自动上传", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Switch(
+                                checked = autoUploadEnabled,
+                                onCheckedChange = { autoUploadEnabled = it; AppPreferences.setAutoUploadEnabled(it) },
+                                colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.primary)
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(
+                                onClick = {
+                                    isTestingConn = true
+                                    updateScope.launch {
+                                        val res = com.hamlog.util.CloudlogSync.testConnection(cloudlogUrl, cloudlogApiKey)
+                                        isTestingConn = false
+                                        val msg = if (res.ok) "连接成功" else "连接失败: "
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(40.dp),
+                                enabled = cloudlogUrl.isNotBlank() && !isTestingConn && !isSyncing,
+                                shape = MaterialTheme.shapes.small,
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                if (isTestingConn) {
+                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp)
+                                    Spacer(Modifier.width(6.dp))
+                                }
+                                Text(if (isTestingConn) "测试中..." else "测试连接", fontSize = 12.sp)
+                            }
+                            Button(
+                                onClick = {
+                                    isSyncing = true; syncResult = null; syncProgress = 0 to 0
+                                    updateScope.launch {
+                                        val contacts = viewModel.getAllContactsForSync()
+                                        syncResult = com.hamlog.util.CloudlogSync.syncContacts(
+                                            cloudlogUrl, cloudlogApiKey, contacts,
+                                            callsign = callsignText, gridSquare = gridText, stationProfileId = stationProfileId
+                                        ) { done, total -> syncProgress = done to total }
+                                        isSyncing = false; showSyncResult = true
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).height(40.dp),
+                                enabled = cloudlogUrl.isNotBlank() && cloudlogApiKey.isNotBlank() && !isSyncing && !isTestingConn && uiState.totalContacts > 0,
+                                shape = MaterialTheme.shapes.small,
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                if (isSyncing) {
+                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("/", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                                } else {
+                                    Text("同步日志", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                                }
+                            }
+                        }
+                    }
+                }
+                // Sync Result Dialog
+                if (showSyncResult && syncResult != null) {
+                    val r = syncResult!!
+                    AlertDialog(
+                        onDismissRequest = { showSyncResult = false },
+                        shape = MaterialTheme.shapes.large,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        title = { Text("同步完成", fontWeight = FontWeight.SemiBold) },
+                        text = {
+                            Column {
+                                Text("成功: , 失败: ", style = MaterialTheme.typography.bodyMedium)
+                                if (r.errors.isNotEmpty()) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(r.errors.take(5).joinToString("\\n"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error, maxLines = 6)
+                                }
+                            }
+                        },
+                        confirmButton = { TextButton(onClick = { showSyncResult = false }) { Text("关闭") } }
+                    )
                 }
 
                 Spacer(Modifier.height(4.dp))
