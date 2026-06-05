@@ -164,11 +164,9 @@ fun MainScreen(
                                     context.startActivity(install)
                                     showAutoUpdateDialog = false
                                 } catch (e: Exception) {
+                                    Toast.makeText(context, "下载失败: ${e.message}", Toast.LENGTH_LONG).show()
                                     isDownloadingUpdate = false
                                     downloadingProgress = null
-                                    val errMsg = e.message ?: e.toString()
-                                    android.util.Log.e("UpdateChecker", "Download failed", e)
-                                    Toast.makeText(context, "下载失败: $errMsg", Toast.LENGTH_LONG).show()
                                 } finally {
                                     isDownloadingUpdate = false
                                     downloadingProgress = null
