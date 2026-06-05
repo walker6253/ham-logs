@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
@@ -68,7 +69,7 @@ fun NavGraph() {
         bottomBar = {
             if (showBottomBar) {
                 Surface(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
                     shadowElevation = 0.dp,
                     color = MaterialTheme.colorScheme.background,
                     tonalElevation = 0.dp
@@ -84,14 +85,13 @@ fun NavGraph() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(top = 6.dp, bottom = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             bottomNavItems.forEach { screen ->
                                 val selected = currentRoute == screen.route
                                 Column(
                                     modifier = Modifier
-                                        .fillMaxWidth(0.5f)
+                                        .weight(1f)
                                         .clickable(
                                             indication = null,
                                             interactionSource = remember { MutableInteractionSource() }

@@ -840,14 +840,14 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                                 modifier = Modifier.weight(1f).height(40.dp),
                                 enabled = cloudlogUrl.isNotBlank() && cloudlogApiKey.isNotBlank() && !isSyncing && !isTestingConn && uiState.totalContacts > 0,
                                 shape = MaterialTheme.shapes.small,
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), disabledContentColor = Color.White.copy(alpha = 0.6f))
                             ) {
                                 if (isSyncing) {
-                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                                    CircularProgressIndicator(Modifier.size(14.dp), strokeWidth = 2.dp, color = Color.White)
                                     Spacer(Modifier.width(6.dp))
-                                    Text("/", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                                    Text("/", fontSize = 12.sp, color = Color.White)
                                 } else {
-                                    Text("同步日志", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary)
+                                    Text("同步日志", fontSize = 12.sp, color = Color.White)
                                 }
                             }
                         }
@@ -898,7 +898,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                     enabled = !uiState.isExporting && uiState.totalContacts > 0,
                     shape = MaterialTheme.shapes.small,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f), disabledContentColor = Color.White.copy(alpha = 0.6f))
                 ) {
                     if (uiState.isExporting) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
