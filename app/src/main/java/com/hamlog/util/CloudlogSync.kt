@@ -90,7 +90,7 @@ object CloudlogSync {
                     if (txPwr.isNotBlank()) append(adifTag("TX_PWR", txPwr))
                     val rxPwr = contact.powerRx.trim().trimEnd('W', 'w').trim()
                     if (rxPwr.isNotBlank()) append(adifTag("RX_PWR", rxPwr))
-                    if (contact.notes.isNotBlank()) append(adifTag("COMMENT", contact.notes.trim()))
+                    if (contact.notes.isNotBlank()) append(adifTag("QSLMSG", contact.notes.trim()))
                     if (gridSquare.isNotBlank()) append(adifTag("GRIDSQUARE", gridSquare))
                     if (callsign.isNotBlank()) append(adifTag("STATION_CALLSIGN", callsign.uppercase().trim()))
                     append("<EOR>")
