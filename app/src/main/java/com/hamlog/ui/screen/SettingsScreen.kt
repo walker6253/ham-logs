@@ -971,6 +971,74 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             }
         }
     }
+
+    // Update check dialog
+    if (showUpdateDialog && updateInfo != null) {
+        val info = updateInfo!!
+        AlertDialog(
+            onDismissRequest = { showUpdateDialog = false },
+            shape = MaterialTheme.shapes.large,
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = {
+                Text(
+                    if (info.hasUpdate) "发现新版本" else "已是最新版本",
+                    fontWeight = FontWeight.SemiBold
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        "当前版本: ${info.currentVersion}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    if (info.hasUpdate) {
+                        Text(
+                            "最新版本: ${info.latestVersion}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        if (info.body.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                info.body.take(300),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 10
+                            )
+                        }
+                    } else {
+                        Text(
+                            "没有可用的更新",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                if (info.hasUpdate && info.releaseUrl.isNotBlank()) {
+                    val uriHandler = LocalUriHandler.current
+                    TextButton(onClick = {
+                        showUpdateDialog = false
+                        uriHandler.openUri(info.releaseUrl)
+                    }) {
+                        Text("前往下载")
+                    }
+                } else {
+                    TextButton(onClick = { showUpdateDialog = false }) {
+                        Text("确定")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUpdateDialog = false }) {
+                    Text("关闭")
+                }
+            }
+        )
+    }
 }
 
 @Composable
