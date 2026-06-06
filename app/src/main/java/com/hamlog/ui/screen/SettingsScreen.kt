@@ -355,6 +355,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                             fontWeight = FontWeight.Bold
                         )
                     },
+                    windowInsets = WindowInsets(0, 0, 0, 0),
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         titleContentColor = MaterialTheme.colorScheme.onBackground
@@ -376,7 +377,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Person, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
-                            Text("\u547c\u53f7", style = MaterialTheme.typography.titleSmall)
+                            Text("呼号", style = MaterialTheme.typography.titleSmall)
                         }
                         Spacer(Modifier.height(12.dp))
                         OutlinedTextField(
@@ -510,7 +511,7 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 SettingsCard {
                     Column(Modifier.padding(10.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Schedule, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.secondary)
+                            Icon(Icons.Default.Schedule, null, Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(8.dp))
                             Text("时区", style = MaterialTheme.typography.titleSmall)
                         }
