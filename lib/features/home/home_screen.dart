@@ -87,8 +87,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final textPrimary = isDark ? AppColors.textPrimary : const Color(0xFF1B1C1D);
     final textMuted = isDark ? AppColors.textMuted : const Color(0xFF777680);
     final borderColor = isDark ? AppColors.border : const Color(0xFFE0E0E8);
-    final amberColor = AppColors.amber;
-    final amberBgColor = isDark ? AppColors.amber.withValues(alpha: 0.1) : AppColors.amber.withValues(alpha: 0.08);
+    final accentColor = AppColors.amber;
+    final accentBgColor = isDark ? AppColors.amber.withValues(alpha: 0.1) : AppColors.amber.withValues(alpha: 0.08);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -98,9 +98,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: Consumer(builder: (ctx, ref, _) {
           final callsign = AppPreferences.callsign;
           final title = callsign.isNotEmpty ? '\ 的通联日志' : '业余无线电通联日志';
-          return Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: amberColor, fontFamily: 'monospace'));
+          return Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18, color: textPrimary, fontFamily: 'monospace'));
         }),
-        actions: [IconButton(icon: Icon(Icons.bar_chart, color: amberColor), onPressed: () => context.go('/stats'))],
+        actions: [IconButton(icon: Icon(Icons.bar_chart, color: textPrimary), onPressed: () => context.go('/stats'))],
       ),
       body: datesAsync.when(
         data: (dates) => dates.isEmpty
@@ -127,15 +127,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     child: Padding(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                       child: Row(children: [
                         if (d.isToday) ...[
-                          Container(width: 8, height: 8, decoration: BoxDecoration(color: amberColor, shape: BoxShape.circle)),
+                          Container(width: 8, height: 8, decoration: BoxDecoration(color: textPrimary, shape: BoxShape.circle)),
                           const SizedBox(width: 10),
                         ],
                         Expanded(child: Text(d.label, style: TextStyle(
                           fontSize: 14, fontWeight: d.isToday ? FontWeight.w700 : FontWeight.w500,
-                          color: d.isToday ? amberColor : textPrimary))),
+                          color: textPrimary))),
                         Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: amberBgColor, borderRadius: BorderRadius.circular(6)),
-                          child: Text('${d.count} 条', style: TextStyle(fontSize: 11, color: amberColor, fontFamily: 'monospace'))),
+                          decoration: BoxDecoration(color: accentBgColor, borderRadius: BorderRadius.circular(6)),
+                          child: Text('${d.count} 条', style: TextStyle(fontSize: 11, color: accentColor, fontFamily: 'monospace'))),
                       ]),
                     ),
                   ),
@@ -145,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         loading: () => Center(child: CircularProgressIndicator(color: AppColors.amber)),
         error: (e, _) => Center(child: Text('加载失败', style: TextStyle(color: AppColors.alertRed))),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton(shape: const CircleBorder(),
         onPressed: _pickDateAndGo,
         backgroundColor: isDark ? AppColors.primaryDark : AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),

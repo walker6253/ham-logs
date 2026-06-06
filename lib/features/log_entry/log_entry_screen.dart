@@ -125,10 +125,9 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
 
   Future<void> _selectSuggestion(String callsign) async {
     _callsign = callsign; _showSuggestions = false;
+    _smartInput.text = callsign;
     FocusScope.of(context).unfocus();
     setState(() {});
-    final db = ref.read(dbProvider); final last = await db.contactDao.getLastContactByCallsign(callsign);
-    if (last != null && mounted) setState(() { _frequency = last.frequencyMHz > 0 ? last.frequencyMHz.toString() : ''; _mode.text = last.mode; _updateBand(); });
   }
 
   Future<void> _save() async {
@@ -344,7 +343,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
         leading: IconButton(icon: Icon(Icons.arrow_back, color: isDark ? AppColors.textPrimary : const Color(0xFF1B1C1D)), onPressed: () => context.go('/home')),
-        title: Text(dateLabel, style: TextStyle(fontWeight: FontWeight.w700, color: isDark ? AppColors.amber : const Color(0xFF7A5C00))),
+        title: Text(dateLabel, style: TextStyle(fontWeight: FontWeight.w700, color: isDark ? AppColors.textPrimary : const Color(0xFF1B1C1D))),
         backgroundColor: bgColor, elevation: 0,
       ),
       body: Column(children: [
@@ -394,7 +393,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
           child: SizedBox(width: double.infinity, child: ElevatedButton(
             onPressed: _callsign.isNotEmpty ? _save : null,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.amber, foregroundColor: AppColors.deep,
+              backgroundColor: isDark ? AppColors.primaryDark : AppColors.primary, foregroundColor: Colors.white,
               padding: EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               disabledBackgroundColor: AppColors.amber.withValues(alpha: 0.35),
             ),
@@ -422,7 +421,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
             : ListView.builder(
                 padding: EdgeInsets.symmetric(horizontal: 14),
                 itemCount: contacts.length,
-                itemBuilder: (_, i) => _contactCard(contacts[i], surfaceColor, borderColor, textPrimary, textSecondary, textMuted),
+                itemBuilder: (_, i) => _contactCard(contacts[i], surfaceColor, borderColor, textPrimary, textSecondary, textMuted, isDark),
               ),
           loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.amber)),
           error: (e, _) => Center(child: Text('加载失败', style: TextStyle(color: AppColors.alertRed))),
@@ -464,7 +463,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
                 padding: const EdgeInsets.only(right: 2),
                 child: Text(prov, style: TextStyle(color: textMuted.withValues(alpha: 0.6), fontSize: 11)),
               ),
-            IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: isDark ? AppColors.amber : const Color(0xFF7A5C00)), onPressed: _commitNext),
+            IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: isDark ? AppColors.primaryDark : AppColors.primary), onPressed: _commitNext),
           ],
         );
       }),
@@ -605,7 +604,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
     }).toList());
   }
 
-  Widget _contactCard(ContactRecord c, Color surface, Color border, Color textPrimary, Color textSecondary, Color textMuted) {
+  Widget _contactCard(ContactRecord c, Color surface, Color border, Color textPrimary, Color textSecondary, Color textMuted, bool isDark) {
     final accent = BandConstants.modeColor(c.mode);
     final timeStr = DateFormat('HH:mm').format(DateTime.fromMillisecondsSinceEpoch(c.createdAt));
 
@@ -628,7 +627,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
             Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(14, 12, 14, 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               Row(children: [
                 Expanded(child: Row(children: [
-                  Text(c.callsign, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: 0.5, color: textPrimary)),
+                  Text(c.callsign, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, letterSpacing: 0.5, color: isDark ? AppColors.primaryDark : AppColors.primary)),
                   const SizedBox(width: 8),
                   GestureDetector(onTap: () => _openQrz(c.callsign), child: Text('QRZ', style: TextStyle(color: textMuted, fontSize: 10))),
                 ])),
