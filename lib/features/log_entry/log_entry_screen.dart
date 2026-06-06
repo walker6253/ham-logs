@@ -165,6 +165,10 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.surface : Colors.white;
     final inputBg = isDark ? AppColors.surfaceLight : const Color(0xFFF5F3F4);
+    final pickerTheme = Theme.of(context).copyWith(
+      colorScheme: isDark ? ColorScheme.dark(primary: AppColors.amber, surface: AppColors.surface)
+        : ColorScheme.light(primary: AppColors.amber, surface: Colors.white),
+    );
 
     final result = await showDialog<bool>(context: context, builder: (ctx) {
       return StatefulBuilder(builder: (ctx, setDlg) => AlertDialog(
@@ -179,13 +183,13 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
             Expanded(child: _editLabelField(ctx, setDlg, '日期', DateFormat('yyyy-MM-dd').format(editDate), inputBg, isDark, () async {
               final picked = await showDatePicker(context: ctx, locale: const Locale('zh'),
                 initialDate: editDate, firstDate: DateTime(2000), lastDate: DateTime.now(),
-                builder: (_, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: ColorScheme.dark(primary: AppColors.amber)), child: child!));
+                builder: (_, child) => Theme(data: pickerTheme, child: child!));
               if (picked != null) setDlg(() => editDate = picked);
             })),
             const SizedBox(width: 16),
             Expanded(child: _editLabelField(ctx, setDlg, '时间', editTime.format(context), inputBg, isDark, () async {
               final picked = await showTimePicker(context: ctx, initialTime: editTime,
-                builder: (_, child) => Theme(data: ThemeData.dark().copyWith(colorScheme: ColorScheme.dark(primary: AppColors.amber)), child: child!));
+                builder: (_, child) => Theme(data: pickerTheme, child: child!));
               if (picked != null) {
                 setDlg(() {
                   editTime = picked;
@@ -259,7 +263,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
         controller: TextEditingController(text: displayVal),
         readOnly: true, enabled: false,
         style: _editFieldStyle(isDark),
-        decoration: _editInputDeco(bg, isDark),
+        decoration: _editInputDeco(bg, isDark).copyWith(suffixIcon: const Icon(Icons.calendar_today, size: 16, color: AppColors.textMuted)),
       ))),
     ]);
   }
@@ -332,133 +336,159 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
         title: Text(dateLabel, style: TextStyle(fontWeight: FontWeight.w700, color: isDark ? AppColors.amber : const Color(0xFF7A5C00))),
         backgroundColor: bgColor, elevation: 0,
       ),
-      body: Stack(children: [
-        SingleChildScrollView(padding: EdgeInsets.fromLTRB(14, 10, 14, 100), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (_showSuccess)
-            Container(width: double.infinity, padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8), margin: EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(color: AppColors.scopeGreen.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.check, color: AppColors.scopeGreen, size: 18), SizedBox(width: 8),
-                Text('保存成功', style: TextStyle(color: AppColors.scopeGreen, fontSize: 13, fontWeight: FontWeight.w600)),
-              ])).animate().fadeIn(duration: 300.ms).slideY(begin: -0.5, end: 0, duration: 300.ms),
+      body: Column(children: [
+        // ===== top: scrollable input form =====
+        Expanded(child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(14, 10, 14, 8),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            if (_showSuccess)
+              Container(width: double.infinity, padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8), margin: EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(color: AppColors.scopeGreen.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.check, color: AppColors.scopeGreen, size: 18), SizedBox(width: 8),
+                  Text('保存成功', style: TextStyle(color: AppColors.scopeGreen, fontSize: 13, fontWeight: FontWeight.w600)),
+                ])).animate().fadeIn(duration: 300.ms).slideY(begin: -0.5, end: 0, duration: 300.ms),
 
-          // Freq | Mode | Band info
-          Container(width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12), margin: const EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: borderColor.withValues(alpha: 0.3))),
-            child: Row(children: [
-              Expanded(child: _infoPanel('频率', _frequency.isNotEmpty ? _frequency : '--')),
-              Container(width: 1, height: 32, color: borderColor.withValues(alpha: 0.3)),
-              Expanded(child: _infoPanel('模式', _mode.text.isNotEmpty ? _mode.text : '--')),
-              Container(width: 1, height: 32, color: borderColor.withValues(alpha: 0.3)),
-              Expanded(child: _infoPanel('波段', _band.isNotEmpty ? _band : '--')),
-            ]),
-          ),
-
-          // Smart input
-          TextField(
-            controller: _smartInput,
-            style: TextStyle(fontSize: 14, fontFamily: 'monospace', color: textPrimary),
-            textCapitalization: TextCapitalization.characters,
-            textInputAction: TextInputAction.done,
-            onChanged: (_) { _onSmartInputChanged(); setState(() {}); },
-            onSubmitted: (_) => _commitNext(),
-            decoration: InputDecoration(
-              hintText: '呼号 频率 模式...',
-              hintStyle: TextStyle(color: textMuted, fontSize: 13),
-              filled: true, fillColor: isDark ? AppColors.surface : const Color(0xFFF5F3F4),
-              suffixIcon: _smartInput.text.isNotEmpty
-                ? IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: isDark ? AppColors.amber : const Color(0xFF7A5C00)), onPressed: _commitNext)
-                : null,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor.withValues(alpha: 0.5))),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor.withValues(alpha: 0.5))),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
-            ),
-          ),
-
-          // Parsed callsign
-          if (_callsign.isNotEmpty) Padding(padding: EdgeInsets.only(top: 6, bottom: 4), child: Row(children: [
-            Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(color: AppColors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6), border: Border.all(color: AppColors.amber.withValues(alpha: 0.25))),
-              child: Text(_callsign, style: TextStyle(color: AppColors.amber, fontWeight: FontWeight.w700, fontSize: 14, fontFamily: 'monospace'))),
-            SizedBox(width: 8),
-            Builder(builder: (_) { final prov = CallSignUtils.getProvince(_callsign); return prov != null ? Text(prov, style: TextStyle(color: textMuted, fontSize: 11)) : SizedBox.shrink(); }),
-          ])),
-
-          // Suggestions
-          if (_showSuggestions && _suggestions.isNotEmpty)
-            Container(margin: EdgeInsets.only(top: 2), decoration: BoxDecoration(color: surfaceColor, borderRadius: BorderRadius.circular(8), border: Border.all(color: borderColor.withValues(alpha: 0.3))),
-              child: Column(children: _suggestions.map((s) => InkWell(onTap: () => _selectSuggestion(s), child: Padding(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10), child: Text(s, style: TextStyle(color: AppColors.amber, fontSize: 13, fontFamily: 'monospace'))))).toList())),
-
-          SizedBox(height: 14),
-
-          // RST
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(child: _rstColumn('我的信号报告', _rstSent, _showRstSentKb, () => _toggleRstKb(true), (v) { _rstSent.text = v; setState(() => _showRstSentKb = false); }, surfaceLightColor, borderColor, textPrimary, textSecondary)),
-            SizedBox(width: 12),
-            Expanded(child: _rstColumn('对方信号报告', _rstReceived, _showRstRecvKb, () => _toggleRstKb(false), (v) { _rstReceived.text = v; setState(() => _showRstRecvKb = false); }, surfaceLightColor, borderColor, textPrimary, textSecondary)),
-          ]), SizedBox(height: 14),
-
-          // Power
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Expanded(child: _powerColumn('我的功率 (W)', _powerTx, _showPowerTxKb, () => _togglePowerKb(true), (v) { _powerTx.text = v; setState(() => _showPowerTxKb = false); }, surfaceLightColor, borderColor, textPrimary, textSecondary)),
-            SizedBox(width: 12),
-            Expanded(child: _powerColumn('对方功率 (W)', _powerRx, _showPowerRxKb, () => _togglePowerKb(false), (v) { _powerRx.text = v; setState(() => _showPowerRxKb = false); }, surfaceLightColor, borderColor, textPrimary, textSecondary)),
-          ]), SizedBox(height: 14),
-
-          // Notes
-          TextField(controller: _notes, maxLines: 2, style: TextStyle(fontSize: 13, color: textPrimary),
-            decoration: InputDecoration(
-              labelText: '备注', labelStyle: TextStyle(color: textSecondary),
-              filled: true, fillColor: isDark ? AppColors.surface : const Color(0xFFF5F3F4),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor.withValues(alpha: 0.5))),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: borderColor.withValues(alpha: 0.5))),
-              focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
-            )),
-          SizedBox(height: 10),
-
-          // Equipment chips
-          if (_antennaList.isNotEmpty) ...[
-            _chipSection('天线', _antennaList, _selectedAntenna, (v) { _selectedAntenna = v; setState(() {}); }),
+            // Freq | Mode | Band info
+            _buildInfoRow(surfaceColor, borderColor),
+            // Smart input
+            _buildSmartInput(textPrimary, textMuted, borderColor, isDark),
+            // Parsed callsign
+            if (_callsign.isNotEmpty) _buildCallsignBadge(textMuted),
+            // Suggestions
+            if (_showSuggestions && _suggestions.isNotEmpty) _buildSuggestions(surfaceColor, borderColor),
+            SizedBox(height: 14),
+            // RST
+            _buildRstRow(surfaceLightColor, borderColor, textPrimary, textSecondary),
+            SizedBox(height: 14),
+            // Power
+            _buildPowerRow(surfaceLightColor, borderColor, textPrimary, textSecondary),
+            SizedBox(height: 14),
+            // Notes
+            _buildNotesField(textPrimary, textSecondary, borderColor, isDark),
             SizedBox(height: 10),
-          ],
-          if (_rigCategories.isNotEmpty) ...[
-            _rigChipSection(surfaceLightColor, borderColor, textPrimary, textSecondary),
-            SizedBox(height: 10),
-          ],
+            // Equipment chips
+            if (_antennaList.isNotEmpty) ...[
+              _chipSection('天线', _antennaList, _selectedAntenna, (v) { _selectedAntenna = v; setState(() {}); }, surfaceLightColor, borderColor, textSecondary),
+              SizedBox(height: 10),
+            ],
+            if (_rigCategories.isNotEmpty) ...[
+              _rigChipSection(surfaceLightColor, borderColor, textPrimary, textSecondary),
+              SizedBox(height: 10),
+            ],
+          ]),
+        )),
 
-          // Save
-          SizedBox(width: double.infinity, child: ElevatedButton(
+        // ===== fixed save button =====
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          child: SizedBox(width: double.infinity, child: ElevatedButton(
             onPressed: _callsign.isNotEmpty ? _save : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.amber, foregroundColor: AppColors.deep,
               padding: EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               disabledBackgroundColor: AppColors.amber.withValues(alpha: 0.35),
             ),
-            child: Text('保存通联', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)))),
-          SizedBox(height: 20),
+            child: Text('保存通联', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+        ),),
 
-          // Contact list header
-          Padding(padding: const EdgeInsets.only(bottom: 8), child: Row(children: [
-            Text(widget.dateEpochDay == todayEpoch ? '今日通联' : '${dt.month}月${dt.day}日 通联',
-              style: TextStyle(color: AppColors.amber, fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'monospace')),
-            if (widget.dateEpochDay == todayEpoch) ...[
-              const Spacer(),
-              Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(color: AppColors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
-                child: Text('${contactsAsync.valueOrNull?.length ?? 0} 条', style: TextStyle(fontSize: 11, color: AppColors.amber, fontFamily: 'monospace'))),
-            ],
-          ])),
-          contactsAsync.when(
-            data: (contacts) => contacts.isEmpty
-              ? Center(child: Padding(padding: EdgeInsets.all(32), child: Text('暂无记录', style: TextStyle(color: textMuted))))
-              : Column(children: contacts.map((c) => _contactCard(c, surfaceColor, borderColor, textPrimary, textSecondary, textMuted)).toList()),
-            loading: () => Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.amber))),
-            error: (e, _) => Center(child: Text('加载失败', style: TextStyle(color: AppColors.alertRed))),
-          ),
+        Divider(height: 1, thickness: 1, color: borderColor.withValues(alpha: 0.3)),
+
+        // ===== contact list header =====
+        Padding(padding: EdgeInsets.fromLTRB(14, 8, 14, 4), child: Row(children: [
+          Text(widget.dateEpochDay == todayEpoch ? '今日通联' : '${dt.month}月${dt.day}日 通联',
+            style: TextStyle(color: AppColors.amber, fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'monospace')),
+          if (widget.dateEpochDay == todayEpoch) ...[
+            const Spacer(),
+            Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(color: AppColors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6)),
+              child: Text('${contactsAsync.valueOrNull?.length ?? 0} 条', style: TextStyle(fontSize: 11, color: AppColors.amber, fontFamily: 'monospace'))),
+          ],
         ])),
+
+        // ===== scrollable contact list =====
+        Expanded(child: contactsAsync.when(
+          data: (contacts) => contacts.isEmpty
+            ? Center(child: Text('暂无记录', style: TextStyle(color: textMuted)))
+            : ListView.builder(
+                padding: EdgeInsets.symmetric(horizontal: 14),
+                itemCount: contacts.length,
+                itemBuilder: (_, i) => _contactCard(contacts[i], surfaceColor, borderColor, textPrimary, textSecondary, textMuted),
+              ),
+          loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.amber)),
+          error: (e, _) => Center(child: Text('加载失败', style: TextStyle(color: AppColors.alertRed))),
+        )),
       ]),
     );
   }
+
+  Widget _buildInfoRow(Color surface, Color border) => Container(
+    width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 12), margin: const EdgeInsets.only(bottom: 10),
+    decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: border.withValues(alpha: 0.3))),
+    child: Row(children: [
+      Expanded(child: _infoPanel('频率', _frequency.isNotEmpty ? _frequency : '--')),
+      Container(width: 1, height: 32, color: border.withValues(alpha: 0.3)),
+      Expanded(child: _infoPanel('模式', _mode.text.isNotEmpty ? _mode.text : '--')),
+      Container(width: 1, height: 32, color: border.withValues(alpha: 0.3)),
+      Expanded(child: _infoPanel('波段', _band.isNotEmpty ? _band : '--')),
+    ]));
+
+  Widget _buildSmartInput(Color textPrimary, Color textMuted, Color border, bool isDark) => TextField(
+    controller: _smartInput,
+    style: TextStyle(fontSize: 14, fontFamily: 'monospace', color: textPrimary),
+    textCapitalization: TextCapitalization.characters,
+    textInputAction: TextInputAction.done,
+    onChanged: (_) { _onSmartInputChanged(); setState(() {}); },
+    onSubmitted: (_) => _commitNext(),
+    decoration: InputDecoration(
+      hintText: '呼号 频率 模式...',
+      hintStyle: TextStyle(color: textMuted, fontSize: 13),
+      filled: true, fillColor: isDark ? AppColors.surface : const Color(0xFFF5F3F4),
+      suffixIcon: _smartInput.text.isNotEmpty
+        ? IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: isDark ? AppColors.amber : const Color(0xFF7A5C00)), onPressed: _commitNext)
+        : null,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
+    ),
+  );
+
+  Widget _buildCallsignBadge(Color textMuted) => Padding(padding: EdgeInsets.only(top: 6, bottom: 4), child: Row(children: [
+    Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: AppColors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6), border: Border.all(color: AppColors.amber.withValues(alpha: 0.25))),
+      child: Text(_callsign, style: TextStyle(color: AppColors.amber, fontWeight: FontWeight.w700, fontSize: 14, fontFamily: 'monospace'))),
+    SizedBox(width: 8),
+    Builder(builder: (_) { final prov = CallSignUtils.getProvince(_callsign); return prov != null ? Text(prov, style: TextStyle(color: textMuted, fontSize: 11)) : SizedBox.shrink(); }),
+  ]));
+
+  Widget _buildSuggestions(Color surface, Color border) => Container(
+    margin: EdgeInsets.only(top: 2),
+    decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(8), border: Border.all(color: border.withValues(alpha: 0.3))),
+    child: Column(children: _suggestions.map((s) => InkWell(onTap: () => _selectSuggestion(s), child: Padding(padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10), child: Text(s, style: TextStyle(color: AppColors.amber, fontSize: 13, fontFamily: 'monospace'))))).toList()));
+
+  Widget _buildRstRow(Color surfaceLight, Color border, Color textPrimary, Color textSecondary) =>
+    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(child: _rstColumn('我的信号报告', _rstSent, _showRstSentKb, () => _toggleRstKb(true), (v) { _rstSent.text = v; setState(() => _showRstSentKb = false); }, surfaceLight, border, textPrimary, textSecondary)),
+      SizedBox(width: 12),
+      Expanded(child: _rstColumn('对方信号报告', _rstReceived, _showRstRecvKb, () => _toggleRstKb(false), (v) { _rstReceived.text = v; setState(() => _showRstRecvKb = false); }, surfaceLight, border, textPrimary, textSecondary)),
+    ]);
+
+  Widget _buildPowerRow(Color surfaceLight, Color border, Color textPrimary, Color textSecondary) =>
+    Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(child: _powerColumn('我的功率 (W)', _powerTx, _showPowerTxKb, () => _togglePowerKb(true), (v) { _powerTx.text = v; setState(() => _showPowerTxKb = false); }, surfaceLight, border, textPrimary, textSecondary)),
+      SizedBox(width: 12),
+      Expanded(child: _powerColumn('对方功率 (W)', _powerRx, _showPowerRxKb, () => _togglePowerKb(false), (v) { _powerRx.text = v; setState(() => _showPowerRxKb = false); }, surfaceLight, border, textPrimary, textSecondary)),
+    ]);
+
+  Widget _buildNotesField(Color textPrimary, Color textSecondary, Color border, bool isDark) => TextField(
+    controller: _notes, maxLines: 2, style: TextStyle(fontSize: 13, color: textPrimary),
+    decoration: InputDecoration(
+      labelText: '备注', labelStyle: TextStyle(color: textSecondary),
+      filled: true, fillColor: isDark ? AppColors.surface : const Color(0xFFF5F3F4),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
+    ));
 
   void _toggleRstKb(bool sent) => setState(() {
     if (sent) { _showRstSentKb = !_showRstSentKb; _showRstRecvKb = false; _showPowerTxKb = false; _showPowerRxKb = false; }
@@ -531,7 +561,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       ])));
 
   Widget _kbtn(String d, TextEditingController c, int m, Color surface, Color border, Color textPrimary) => GestureDetector(
-    onTap: () { if (c.text.length < m) c.text += d; },
+    onTap: () { if (c.text.length < m) c.text += d; setState(() {}); },
     child: Container(height: 34, alignment: Alignment.center, margin: EdgeInsets.all(1),
       decoration: BoxDecoration(color: surface, borderRadius: BorderRadius.circular(6), border: Border.all(color: border.withValues(alpha: 0.3))),
       child: Text(d, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'monospace', color: textPrimary))));
@@ -635,7 +665,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       child: Text(mode, style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.w700, fontFamily: 'monospace')));
   }
 
-  Widget _chipSection(String title, List<String> items, String selected, Function(String) setSelected) {
+  Widget _chipSection(String title, List<String> items, String selected, Function(String) setSelected, Color surfaceLight, Color border, Color textSecondary) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.amber, letterSpacing: 1)),
       const SizedBox(height: 4),
@@ -643,11 +673,11 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
         onTap: () => _chipToggle(items, tag, () => _selectedAntenna, (v) { _selectedAntenna = v; }, _notes),
         child: Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: selected == tag ? AppColors.amber.withValues(alpha: 0.2) : AppColors.surfaceLight,
+            color: selected == tag ? AppColors.amber.withValues(alpha: 0.2) : surfaceLight,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: selected == tag ? AppColors.amber : AppColors.border.withValues(alpha: 0.2)),
+            border: Border.all(color: selected == tag ? AppColors.amber : border.withValues(alpha: 0.2)),
           ),
-          child: Text(tag, style: TextStyle(fontSize: 11, fontWeight: selected == tag ? FontWeight.w700 : FontWeight.w400, color: selected == tag ? AppColors.amber : AppColors.textSecondary)),
+          child: Text(tag, style: TextStyle(fontSize: 11, fontWeight: selected == tag ? FontWeight.w700 : FontWeight.w400, color: selected == tag ? AppColors.amber : textSecondary)),
         ),
       )).toList()),
     ]);
