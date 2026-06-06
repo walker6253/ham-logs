@@ -446,9 +446,21 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       hintText: '呼号 频率 模式...',
       hintStyle: TextStyle(color: textMuted, fontSize: 13),
       filled: true, fillColor: isDark ? AppColors.surface : const Color(0xFFF5F3F4),
-      suffixIcon: _smartInput.text.isNotEmpty
-        ? IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: isDark ? AppColors.amber : const Color(0xFF7A5C00)), onPressed: _commitNext)
-        : null,
+      suffixIcon: Builder(builder: (_) {
+        final prov = CallSignUtils.getProvince(_smartInput.text.split(' ').first);
+        if (_smartInput.text.isEmpty) return const SizedBox.shrink();
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (prov != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 2),
+                child: Text(prov, style: TextStyle(color: textMuted.withValues(alpha: 0.6), fontSize: 11)),
+              ),
+            IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: isDark ? AppColors.amber : const Color(0xFF7A5C00)), onPressed: _commitNext),
+          ],
+        );
+      }),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
@@ -459,8 +471,6 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
     Container(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(color: AppColors.amber.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(6), border: Border.all(color: AppColors.amber.withValues(alpha: 0.25))),
       child: Text(_callsign, style: TextStyle(color: AppColors.amber, fontWeight: FontWeight.w700, fontSize: 14, fontFamily: 'monospace'))),
-    SizedBox(width: 8),
-    Builder(builder: (_) { final prov = CallSignUtils.getProvince(_callsign); return prov != null ? Text(prov, style: TextStyle(color: textMuted, fontSize: 11)) : SizedBox.shrink(); }),
   ]));
 
   Widget _buildSuggestions(Color surface, Color border) => Container(
