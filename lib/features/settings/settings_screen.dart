@@ -212,24 +212,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(padding: const EdgeInsets.all(14), children: [
         _sectionTitle('OP 信息'),
         const SizedBox(height: 8),
-        const SizedBox(height: 12),
+        _textField('呼号', _callsignCtrl, (v) => _savePref('callsign', v), textPrimary, textSecondary, inputFill, borderColor),
+        _textField('姓名', _nameCtrl, (v) => _savePref('opName', v), textPrimary, textSecondary, inputFill, borderColor),
+        _textField('设备', _equipCtrl, (v) => _savePref('equipment', v), textPrimary, textSecondary, inputFill, borderColor),
+        const SizedBox(height: 16),
         _sectionTitle('时区'),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _timezone,
-          isExpanded: true,
-          decoration: InputDecoration(
+        DropdownMenu<String>(
+          initialSelection: _timezone,
+          expandedInsets: EdgeInsets.zero,
+          width: double.infinity,
+          inputDecorationTheme: InputDecorationTheme(
             filled: true, fillColor: inputFill, isDense: true,
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
           ),
-          style: TextStyle(fontSize: 13, color: textPrimary),
-          items: TimezoneUtil.zoneIds.map((z) => DropdownMenuItem(value: z, child: Text(TimezoneUtil.displayName(z), style: TextStyle(fontSize: 12)))).toList(),
-          onChanged: (v) { if (v != null) { setState(() => _timezone = v); _savePref('timezone', v); } },
+          textStyle: TextStyle(fontSize: 13, color: textPrimary),
+          dropdownMenuEntries: TimezoneUtil.zoneIds.map((z) => DropdownMenuEntry(value: z, label: TimezoneUtil.displayName(z), labelWidget: Text(TimezoneUtil.displayName(z), style: TextStyle(fontSize: 12)))).toList(),
+          onSelected: (v) { if (v != null) { setState(() => _timezone = v); _savePref('timezone', v); } },
         ),
-        _textField('呼号', _callsignCtrl, (v) => _savePref('callsign', v), textPrimary, textSecondary, inputFill, borderColor),
-        _textField('姓名', _nameCtrl, (v) => _savePref('opName', v), textPrimary, textSecondary, inputFill, borderColor),
-        _textField('设备', _equipCtrl, (v) => _savePref('equipment', v), textPrimary, textSecondary, inputFill, borderColor),
+
         _sectionTitle('天线管理'),
         const SizedBox(height: 8),
         ..._antennaList.asMap().entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 1), child: Row(children: [
@@ -307,17 +309,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget _sectionTitle(String title) => Text(title, style: TextStyle(color: AppColors.amber, fontSize: 14, fontWeight: FontWeight.w700));
 
   Widget _textField(String label, TextEditingController ctrl, Function(String) onChanged, Color textPrimary, Color textSecondary, Color inputFill, Color border) =>
-    Padding(padding: const EdgeInsets.only(bottom: 8), child: TextField(
-      controller: ctrl, onChanged: onChanged,
-      style: TextStyle(color: textPrimary, fontSize: 13),
-      decoration: InputDecoration(
-        labelText: label, labelStyle: TextStyle(color: textSecondary),
-        filled: true, fillColor: inputFill,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
+    Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.only(bottom: 4, left: 2), child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: textSecondary, letterSpacing: 1))),
+      TextField(
+        controller: ctrl, onChanged: onChanged,
+        style: TextStyle(color: textPrimary, fontSize: 13),
+        decoration: InputDecoration(
+          filled: true, fillColor: inputFill, isDense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: border)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
+        ),
       ),
-    ));
+    ]));
 
   @override
   void dispose() {
