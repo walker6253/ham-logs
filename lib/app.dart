@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
 import 'core/design/app_theme.dart';
-import 'features/splash/splash_screen.dart';
 import 'core/design/app_colors.dart';
 import 'features/home/home_screen.dart';
 import 'features/log_entry/log_entry_screen.dart';
@@ -15,7 +14,7 @@ final _rootKey = GlobalKey<NavigatorState>();
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     navigatorKey: _rootKey,
-    initialLocation: '/',
+    initialLocation: '/home',
     routes: [
       ShellRoute(
         builder: (context, state, child) {
@@ -28,7 +27,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
         routes: [
-          GoRoute(path: '/', builder: (_, __) => const SplashScreen()),
+          
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
         ],

@@ -33,7 +33,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _cloudUrlCtrl = TextEditingController();
   final _cloudKeyCtrl = TextEditingController();
   bool _autoUpload = false;
-  String _timezone = 'Asia/Shanghai';
+  String _timezone = TimezoneUtil.defaultZone;
   String _gridSquare = '';
   int _totalContacts = 0;
   bool _syncing = false;
@@ -212,6 +212,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(padding: const EdgeInsets.all(14), children: [
         _sectionTitle('OP 信息'),
         const SizedBox(height: 8),
+        const SizedBox(height: 12),
+        _sectionTitle('时区'),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _timezone,
+          isExpanded: true,
+          decoration: InputDecoration(
+            filled: true, fillColor: inputFill, isDense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+          ),
+          style: TextStyle(fontSize: 13, color: textPrimary),
+          items: TimezoneUtil.zoneIds.map((z) => DropdownMenuItem(value: z, child: Text(TimezoneUtil.displayName(z), style: TextStyle(fontSize: 12)))).toList(),
+          onChanged: (v) { if (v != null) { setState(() => _timezone = v); _savePref('timezone', v); } },
+        ),
         _textField('呼号', _callsignCtrl, (v) => _savePref('callsign', v), textPrimary, textSecondary, inputFill, borderColor),
         _textField('姓名', _nameCtrl, (v) => _savePref('opName', v), textPrimary, textSecondary, inputFill, borderColor),
         _textField('设备', _equipCtrl, (v) => _savePref('equipment', v), textPrimary, textSecondary, inputFill, borderColor),
