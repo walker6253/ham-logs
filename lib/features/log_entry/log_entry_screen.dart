@@ -51,6 +51,8 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   @override
   void initState() {
     super.initState();
+    _frequency = ref.read(persistedFreqProvider);
+    _mode.text = ref.read(persistedModeProvider);
     _loadEquipment();
   }
 
@@ -93,6 +95,8 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       }
       setState(() { _suggestions = []; _showSuggestions = false; });
     }
+    ref.read(persistedFreqProvider.notifier).state = _frequency;
+    ref.read(persistedModeProvider.notifier).state = _mode.text;
     setState(() {});
   }
 
@@ -134,7 +138,10 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       powerRx: Value(_powerRx.text.replaceAll(RegExp(r'[Ww]$'), '').trim()),
       notes: Value(_notes.text.trim()), createdAt: Value(DateTime.now().millisecondsSinceEpoch),
     ));
-    _callsign = ''; _notes.clear(); _smartInput.clear();
+    _callsign = ''; _notes.clear();
+    ref.read(persistedFreqProvider.notifier).state = _frequency;
+    ref.read(persistedModeProvider.notifier).state = _mode.text;
+    _smartInput.clear();
     _rstSent.text = '59'; _rstReceived.text = '59'; _powerTx.text = '100'; _powerRx.text = '100';
     _selectedAntenna = ''; _selectedRig = '';
     setState(() => _showSuccess = true);
@@ -174,6 +181,8 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       return Dialog(
         insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
         child: StatefulBuilder(builder: (ctx, setDlg) => AlertDialog(
+        titlePadding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+        contentPadding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
         backgroundColor: bgColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -355,8 +364,6 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
             _buildInfoRow(surfaceColor, borderColor),
             // Smart input
             _buildSmartInput(textPrimary, textMuted, borderColor, isDark),
-            // Parsed callsign
-            if (_callsign.isNotEmpty) _buildCallsignBadge(textMuted),
             // Suggestions
             if (_showSuggestions && _suggestions.isNotEmpty) _buildSuggestions(surfaceColor, borderColor),
             SizedBox(height: 14),
