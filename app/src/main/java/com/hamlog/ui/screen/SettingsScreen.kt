@@ -348,7 +348,6 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                modifier = Modifier.height(48.dp),
                     title = {
                         Text(
                             "\u8bbe\u7f6e",
