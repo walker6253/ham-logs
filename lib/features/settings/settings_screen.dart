@@ -226,7 +226,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SizedBox(height: 16),
         _sectionTitle('天线管理'),
         const SizedBox(height: 8),
-        ..._antennaList.asMap().entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(children: [
+        ..._antennaList.asMap().entries.map((e) => Padding(padding: const EdgeInsets.only(bottom: 1), child: Row(children: [
           Expanded(child: Text(e.value, style: TextStyle(color: textPrimary, fontSize: 13))),
           IconButton(icon: Icon(Icons.delete_outline, size: 18, color: AppColors.alertRed.withValues(alpha: 0.6)), onPressed: () => _deleteAntenna(e.key)),
         ]))),
@@ -242,12 +242,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ..._rigList.expand((cat) => [
           Text(cat.brand, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.amber)),
           const SizedBox(height: 4),
-          ...cat.models.map((m) => Padding(padding: const EdgeInsets.only(bottom: 2), child: Row(children: [
+          ...cat.models.map((m) => Padding(padding: const EdgeInsets.only(bottom: 1), child: Row(children: [
             SizedBox(width: 16),
             Expanded(child: Text(m, style: TextStyle(color: textPrimary, fontSize: 12))),
             IconButton(icon: Icon(Icons.delete_outline, size: 16, color: AppColors.alertRed.withValues(alpha: 0.6)), onPressed: () => _deleteRigModel(cat.brand, m)),
           ]))),
-          const SizedBox(height: 6),
+          const SizedBox(height: 2),
         ]),
         Row(children: [
           Expanded(flex: 2, child: TextField(decoration: InputDecoration(hintText: '品牌', isDense: true, filled: true, fillColor: inputFill, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor))),

@@ -58,6 +58,11 @@ class ContactDao extends DatabaseAccessor<AppDatabase> with _$ContactDaoMixin {
       (select(contactRecords)..where((t) => t.callsign.equals(callsign))
         ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])).get();
 
+  Future<List<ContactRecord>> searchContactsByCallsignPrefix(String prefix) =>
+      (select(contactRecords)..where((t) => t.callsign.like('$prefix%'))
+        ..orderBy([(t) => OrderingTerm.desc(t.createdAt)])
+        ..limit(20)).get();
+
   Future<List<DateCount>> getDateCountsInRange(int start, int end) =>
       customSelect('SELECT date_epoch_day AS dateEpochDay, COUNT(*) as count FROM contact_records WHERE date_epoch_day >= ?1 AND date_epoch_day <= ?2 GROUP BY date_epoch_day ORDER BY date_epoch_day ASC',
         variables: [Variable.withInt(start), Variable.withInt(end)])

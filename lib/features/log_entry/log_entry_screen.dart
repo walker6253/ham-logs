@@ -42,6 +42,8 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   bool _showRstSentKb = false, _showRstRecvKb = false, _showPowerTxKb = false, _showPowerRxKb = false;
   List<String> _suggestions = [];
   bool _showSuggestions = false, _showSuccess = false;
+  List<ContactRecord>? _historicalContacts;
+  String _searchCallsign = '';
   String _band = '';
   bool _isCommitting = false;
   String _selectedAntenna = '', _selectedRig = '';
@@ -74,7 +76,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
     if (_isCommitting) return;
     final input = _smartInput.text;
     if (input.isEmpty) {
-      setState(() { _frequency = _preEditFreq; _mode.text = _preEditMode; _callsign = ''; _showSuggestions = false; });
+      setState(() { _frequency = _preEditFreq; _mode.text = _preEditMode; _callsign = ''; _showSuggestions = false; _historicalContacts = null; _searchCallsign = ''; });
       return;
     }
     final prevEmpty = _smartInput.text.length <= 1;
@@ -118,16 +120,25 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   }
 
   Future<void> _searchCallsigns(String q) async {
-    if (q.length < 2) return;
-    final db = ref.read(dbProvider); final s = await db.contactDao.searchCallsigns(q.toUpperCase().trim());
-    if (mounted) setState(() { _suggestions = s; _showSuggestions = s.isNotEmpty; });
+    if (q.length < 2) { setState(() { _historicalContacts = null; _searchCallsign = ''; }); return; }
+    final db = ref.read(dbProvider);
+    final s = await db.contactDao.searchCallsigns(q.toUpperCase().trim());
+    List<ContactRecord>? hist;
+    _searchCallsign = q.toUpperCase().trim();
+    if (q.length >= 3) {
+      hist = await db.contactDao.searchContactsByCallsignPrefix(_searchCallsign);
+      if (hist.isEmpty) hist = null;
+    }
+    if (mounted) setState(() { _suggestions = s; _showSuggestions = s.isNotEmpty; _historicalContacts = hist; });
   }
 
   Future<void> _selectSuggestion(String callsign) async {
     _callsign = callsign; _showSuggestions = false;
     _smartInput.text = callsign;
     FocusScope.of(context).unfocus();
-    setState(() {});
+    final db = ref.read(dbProvider);
+    final hist = await db.contactDao.searchContactsByCallsignPrefix(callsign);
+    if (mounted) setState(() { _historicalContacts = hist.isNotEmpty ? hist : null; _searchCallsign = callsign; });
   }
 
   Future<void> _save() async {
@@ -142,6 +153,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       notes: Value(_notes.text.trim()), createdAt: Value(DateTime.now().millisecondsSinceEpoch),
     ));
     _callsign = ''; _notes.clear();
+    _historicalContacts = null; _searchCallsign = '';
     ref.read(persistedFreqProvider.notifier).state = _frequency;
     ref.read(persistedModeProvider.notifier).state = _mode.text;
     _smartInput.clear();
@@ -445,6 +457,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
     controller: _smartInput,
     style: TextStyle(fontSize: 14, fontFamily: 'monospace', color: textPrimary),
     textCapitalization: TextCapitalization.characters,
+    inputFormatters: [UpperCaseTextFormatter()],
     textInputAction: TextInputAction.done,
     onChanged: (_) { _onSmartInputChanged(); setState(() {}); },
     onSubmitted: (_) => _commitNext(),
@@ -728,5 +741,14 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   void _openQrz(String callsign) {
     final uri = Uri.parse('https://www.qrz.com/db/$callsign');
     ul.launchUrl(uri, mode: ul.LaunchMode.externalApplication);
+  }
+}
+
+
+// Simple formatter to force uppercase input
+class UpperCaseTextFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+    return TextEditingValue(text: newValue.text.toUpperCase(), selection: newValue.selection);
   }
 }
