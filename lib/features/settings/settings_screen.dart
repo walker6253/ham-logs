@@ -252,7 +252,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _sectionTitle('设备管理'),
         const SizedBox(height: 8),
         ..._rigList.expand((cat) => [
-          Text(cat.brand, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: AppColors.amber)),
+          Text(cat.brand, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, color: textPrimary)),
           const SizedBox(height: 2),
           ...cat.models.map((m) => Padding(padding: const EdgeInsets.only(bottom: 1), child: Row(children: [
             SizedBox(width: 16),
