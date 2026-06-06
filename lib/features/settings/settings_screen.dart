@@ -312,8 +312,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Widget _sectionTitle(String title, {IconData? icon}) => Row(children: [
     if (icon != null) ...[Icon(icon, size: 16, color: AppColors.primary), const SizedBox(width: 6)],
-    Container(width: 3, height: 14, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
-    const SizedBox(width: 8),
     Text(title, style: TextStyle(color: AppColors.textLight, fontSize: 14, fontWeight: FontWeight.w700)),
   ]);
 
