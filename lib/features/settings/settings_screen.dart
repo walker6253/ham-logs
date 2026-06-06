@@ -132,7 +132,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
     _loadPrefs();
     ref.read(homeRefreshNotifier.notifier).state++;
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('导入完成：$imported / ${records.length} 条'), backgroundColor: AppColors.scopeGreen));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('导入完成：$imported / ${records.length} 条'), backgroundColor: AppColors.primary));
   }
 
   Future<void> _syncCloudlog() async {
@@ -153,7 +153,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _syncing = false;
       _syncResult = '成功: ${result.success}  失败: ${result.failed}';
     });
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_syncResult), backgroundColor: result.failed > 0 ? AppColors.alertRed : AppColors.scopeGreen));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_syncResult), backgroundColor: result.failed > 0 ? AppColors.alertRed : AppColors.primary));
   }
 
   Future<void> _addAntenna() async {
@@ -218,18 +218,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         const SizedBox(height: 16),
         _sectionTitle('时区'),
         const SizedBox(height: 8),
-        DropdownMenu<String>(
-          initialSelection: _timezone,
-          expandedInsets: EdgeInsets.zero,
+        Container(
           width: double.infinity,
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true, fillColor: inputFill, isDense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor)),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: inputFill,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor),
           ),
-          textStyle: TextStyle(fontSize: 13, color: textPrimary),
-          dropdownMenuEntries: TimezoneUtil.zoneIds.map((z) => DropdownMenuEntry(value: z, label: TimezoneUtil.displayName(z), labelWidget: Text(TimezoneUtil.displayName(z), style: TextStyle(fontSize: 12)))).toList(),
-          onSelected: (v) { if (v != null) { setState(() => _timezone = v); _savePref('timezone', v); } },
+          child: DropdownButton<String>(
+            value: _timezone,
+            isExpanded: true,
+            underline: const SizedBox.shrink(),
+            style: TextStyle(fontSize: 13, color: textPrimary),
+            items: TimezoneUtil.zoneIds.map((z) => DropdownMenuItem(value: z, child: Text(TimezoneUtil.displayName(z), style: TextStyle(fontSize: 12)))).toList(),
+            onChanged: (v) { if (v != null) { setState(() => _timezone = v); _savePref('timezone', v); } },
+          ),
         ),
 
         _sectionTitle('天线管理'),
@@ -242,7 +246,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Expanded(child: TextField(decoration: InputDecoration(hintText: '新天线', isDense: true, filled: true, fillColor: inputFill, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor))),
             style: TextStyle(fontSize: 12, color: textPrimary), onChanged: (v) => _newAntenna = v)),
           const SizedBox(width: 8),
-          ElevatedButton(onPressed: _addAntenna, style: ElevatedButton.styleFrom(backgroundColor: AppColors.scopeGreen), child: Text('添加', style: TextStyle(fontSize: 11, color: AppColors.deep))),
+          ElevatedButton(onPressed: _addAntenna, style: ElevatedButton.styleFrom(backgroundColor: isDark ? AppColors.primaryDark : AppColors.primary), child: Text('添加', style: TextStyle(fontSize: 11, color: Colors.white))),
         ]),
         const SizedBox(height: 16),
         _sectionTitle('设备管理'),
@@ -264,7 +268,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Expanded(flex: 3, child: TextField(decoration: InputDecoration(hintText: '型号', isDense: true, filled: true, fillColor: inputFill, border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: borderColor))),
             style: TextStyle(fontSize: 12, color: textPrimary), onChanged: (v) => _newRigModel = v)),
           const SizedBox(width: 8),
-          ElevatedButton(onPressed: _addRig, style: ElevatedButton.styleFrom(backgroundColor: AppColors.scopeGreen), child: Text('添加', style: TextStyle(fontSize: 11, color: AppColors.deep))),
+          ElevatedButton(onPressed: _addRig, style: ElevatedButton.styleFrom(backgroundColor: isDark ? AppColors.primaryDark : AppColors.primary), child: Text('添加', style: TextStyle(fontSize: 11, color: Colors.white))),
         ]),
         const SizedBox(height: 16),
         _sectionTitle('Cloudlog 同步'),
@@ -274,11 +278,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         Row(children: [
           Text('自动上传', style: TextStyle(color: textSecondary, fontSize: 13)),
           const Spacer(),
-          Switch(value: _autoUpload, onChanged: (v) { setState(() => _autoUpload = v); AppPreferences.autoUploadEnabled = v; }, activeColor: AppColors.scopeGreen, inactiveTrackColor: inputFill),
+          Switch(value: _autoUpload, onChanged: (v) { setState(() => _autoUpload = v); AppPreferences.autoUploadEnabled = v; }, activeColor: isDark ? AppColors.primaryDark : AppColors.primary, inactiveTrackColor: inputFill),
         ]),
         const SizedBox(height: 8),
         ElevatedButton.icon(onPressed: _syncing ? null : _syncCloudlog,
-          icon: _syncing ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: AppColors.deep, strokeWidth: 2)) : Icon(Icons.cloud_upload),
+          icon: _syncing ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : Icon(Icons.cloud_upload),
           label: Text(_syncing ? '同步中...' : '手动同步'),
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.amber)),
         if (_syncResult.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_syncResult, style: TextStyle(color: textSecondary, fontSize: 12))),
@@ -306,7 +310,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _sectionTitle(String title) => Text(title, style: TextStyle(color: AppColors.amber, fontSize: 14, fontWeight: FontWeight.w700));
+  Widget _sectionTitle(String title) => Row(children: [
+    Container(width: 3, height: 14, decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(2))),
+    const SizedBox(width: 8),
+    Text(title, style: TextStyle(color: AppColors.textLight, fontSize: 14, fontWeight: FontWeight.w700)),
+  ]);
 
   Widget _textField(String label, TextEditingController ctrl, Function(String) onChanged, Color textPrimary, Color textSecondary, Color inputFill, Color border) =>
     Padding(padding: const EdgeInsets.only(bottom: 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
