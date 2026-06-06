@@ -214,7 +214,7 @@ fun LogEntryScreen(
             containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
-                modifier = Modifier.height(48.dp),
+                    modifier = Modifier.height(56.dp),
                     title = { Text(uiState.dateString, style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif), fontWeight = FontWeight.Bold) },
                     navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回", tint = MaterialTheme.colorScheme.onBackground) } },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)

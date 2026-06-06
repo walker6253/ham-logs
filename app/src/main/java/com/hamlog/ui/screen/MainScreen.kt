@@ -201,13 +201,15 @@ fun MainScreen(
         topBar = {
             val title = if (userCallsign.isNotBlank()) "${userCallsign} 的通联日志" else "业余无线电通联日志"
             TopAppBar(
-                modifier = Modifier.height(48.dp),
+                modifier = Modifier.height(56.dp),
                 title = {
-                    Text(
-                        title,
-                        style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif),
-                        fontWeight = FontWeight.Bold
-                    )
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        Text(
+                            title,
+                            style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif),
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = onNavigateToStats) {
