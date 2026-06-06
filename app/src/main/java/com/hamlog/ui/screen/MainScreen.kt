@@ -201,22 +201,24 @@ fun MainScreen(
         topBar = {
             val title = if (userCallsign.isNotBlank()) "${userCallsign} 的通联日志" else "业余无线电通联日志"
             TopAppBar(
-                modifier = Modifier.height(56.dp),
                 title = {
-                    Box(contentAlignment = Alignment.CenterStart) {
-                        Text(
-                            title,
-                            style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif),
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    Text(
+                        title,
+                        style = MaterialTheme.typography.headlineSmall.copy(fontFamily = NotoSerif),
+                        fontWeight = FontWeight.Bold
+                    )
                 },
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 actions = {
-                    IconButton(onClick = onNavigateToStats) {
+                    IconButton(
+                        onClick = onNavigateToStats,
+                        modifier = Modifier.size(40.dp)
+                    ) {
                         Icon(
                             Icons.Filled.BarChart,
                             contentDescription = "统计",
-                            tint = MaterialTheme.colorScheme.onBackground
+                            tint = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 },

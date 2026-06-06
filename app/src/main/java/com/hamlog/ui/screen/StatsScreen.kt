@@ -64,7 +64,6 @@ fun StatsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                modifier = Modifier.height(56.dp),
                 title = {
                     Text(
                         "通联统计",
@@ -72,6 +71,7 @@ fun StatsScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
