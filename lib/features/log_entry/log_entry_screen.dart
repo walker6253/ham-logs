@@ -482,7 +482,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       padding: EdgeInsets.fromLTRB(safeSide, 0, safeSide, safeSide),
       child: Row(children: [
         Expanded(
-          flex: 55,
+          flex: 58,
           child: Column(children: [
             Expanded(
               child: SingleChildScrollView(
@@ -530,7 +530,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
           ]),
         ),
         Expanded(
-          flex: 45,
+          flex: 42,
           child: Container(
             decoration: BoxDecoration(
               border: Border(left: BorderSide(color: borderColor.withAlpha(76), width: 1)),
@@ -859,8 +859,9 @@ Row(children: [
               ]),
               if (c.frequencyMHz > 0 || c.rstSent.isNotEmpty || c.rstReceived.isNotEmpty) ...[
                 const SizedBox(height: 5),
-                Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 2, children: [
+                Row(children: [
                   if (c.frequencyMHz > 0) Text('${c.frequencyMHz} MHz', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, fontFamily: 'monospace', color: textPrimary)),
+                  const Spacer(),
                   if (c.rstSent.isNotEmpty) ...[
                     Text('Snt ', style: TextStyle(color: textSecondary, fontSize: 11)),
                     Text(c.rstSent, style: TextStyle(color: textPrimary, fontSize: 11, fontWeight: FontWeight.w600)),
