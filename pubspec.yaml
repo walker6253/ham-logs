@@ -1,4 +1,4 @@
-name: qso_keeper
+name: ham_logs
 description: "QSO Keeper - 业余无线电通联日志"
 publish_to: 'none'
 version: 1.0.1+2
