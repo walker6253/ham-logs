@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design/app_colors.dart';
 import '../../core/design/charts.dart';
+import '../../core/design/responsive.dart';
 import '../../data/database/app_database.dart';
 import '../../data/providers.dart';
 
@@ -100,7 +101,6 @@ class StatsData {
       );
     }
 
-    // 独立呼号
     final csSet = <String>{};
     final daysSet = <int>{};
     for (final c in contacts) {
@@ -108,7 +108,6 @@ class StatsData {
       daysSet.add(c.dateEpochDay);
     }
 
-    // 波段分布
     final bandCount = <String, int>{};
     for (final c in contacts) {
       final b = _getBand(c.frequencyMHz);
@@ -120,7 +119,6 @@ class StatsData {
         .toList()
       ..sort((a, b) => b.count.compareTo(a.count));
 
-    // 模式分布
     final modeCount = <String, int>{};
     for (final c in contacts) {
       final m = c.mode.isEmpty ? '其他' : c.mode;
@@ -131,16 +129,13 @@ class StatsData {
         .toList()
       ..sort((a, b) => b.count.compareTo(a.count));
 
-    // 小时分布 (基于 createdAt)
     final hourArr = List.generate(24, (_) => 0);
     for (final c in contacts) {
       final dt = DateTime.fromMillisecondsSinceEpoch(c.createdAt);
-      final h = dt.hour;
-      hourArr[h]++;
+      hourArr[dt.hour]++;
     }
     final hours = List.generate(24, (i) => (hour: i, count: hourArr[i]));
 
-    // Top 呼号
     final csCount = <String, int>{};
     final csLastBand = <String, String>{};
     final csLastMode = <String, String>{};
@@ -208,7 +203,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   Granularity _granularity = Granularity.daily;
   TrendRange _range = TrendRange.days30;
 
-  // 趋势数据缓存
   List<({String key, String label, int value})>? _cachedTrend;
   TrendRange? _cachedRange;
   Granularity? _cachedGranularity;
@@ -228,15 +222,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final stats = ref.watch(statsDataProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
-    final surfaceVariant =
-        isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceContainer;
-    final textPrimary =
-        isDark ? AppColors.textPrimary : AppColors.textLight;
-    final textVariant =
-        isDark ? AppColors.textDarkVariant : AppColors.textLightVariant;
-    final textMuted =
-        isDark ? AppColors.textMuted : AppColors.textLightMuted;
+    final surfaceVariant = isDark ? AppColors.darkSurfaceLight : AppColors.lightSurfaceContainer;
+    final textPrimary = isDark ? AppColors.textPrimary : AppColors.textLight;
+    final textVariant = isDark ? AppColors.textDarkVariant : AppColors.textLightVariant;
+    final textMuted = isDark ? AppColors.textMuted : AppColors.textLightMuted;
     final primaryColor = AppColors.primary;
+    final hPad = statsHPadding(context);
+    final maxW = contentMaxWidth(context);
+    final isWide = isWideScreen(context);
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -246,67 +239,59 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         title: Text('通联统计',
-            style: TextStyle(
-                color: textPrimary,
-                fontWeight: FontWeight.w700,
-                fontSize: 18)),
-        leading: IconButton(
-            icon: Icon(Icons.arrow_back, color: textPrimary),
-            onPressed: () => context.go('/home')),
+            style: TextStyle(color: textPrimary, fontWeight: FontWeight.w700, fontSize: 18 * typeScale(context))),
+        leading: IconButton(icon: Icon(Icons.arrow_back, color: textPrimary), onPressed: () => context.go('/home')),
       ),
-      body: stats.when(
-        data: (s) => s.total == 0
-            ? Center(
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
+      body: Center(
+        child: stats.when(
+          data: (s) => s.total == 0
+              ? _emptyStats(textVariant, textMuted)
+              : SizedBox(
+                  width: maxW,
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(hPad, 12, hPad, 40),
                     children: [
-                    Icon(Icons.equalizer,
-                        size: 48,
-                        color: textMuted.withValues(alpha: 0.4)),
-                    const SizedBox(height: 8),
-                    Text('暂无统计数据',
-                        style: TextStyle(color: textVariant, fontSize: 14)),
-                    const SizedBox(height: 4),
-                    Text('记录通联后即可查看统计图表',
-                        style: TextStyle(
-                            color: textMuted.withValues(alpha: 0.6),
-                            fontSize: 12)),
-                  ]))
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 40),
-                children: [
-                  _overviewSection(s, surfaceVariant, textPrimary, textVariant),
-                  const SizedBox(height: 16),
-                  _trendSection(s, surfaceVariant, textPrimary, textVariant,
-                      textMuted, primaryColor),
-                  const SizedBox(height: 16),
-                  _bandSection(s, surfaceVariant, textPrimary, textVariant,
-                      textMuted, primaryColor),
-                  const SizedBox(height: 16),
-                  _modeSection(s, surfaceVariant, textPrimary, textVariant,
-                      textMuted, primaryColor),
-                  const SizedBox(height: 16),
-                  _hourSection(s, surfaceVariant, textPrimary, textVariant,
-                      textMuted, primaryColor),
-                  const SizedBox(height: 16),
-                  _topCallsSection(
-                      s, surfaceVariant, textPrimary, textVariant, primaryColor),
-                ],
-              ),
-        loading: () => const Center(
-            child:
-                CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) => Center(
-            child: Text('加载失败',
-                style: TextStyle(color: AppColors.alertRed))),
+                      _overviewSection(s, surfaceVariant, textPrimary, textVariant),
+                      const SizedBox(height: 16),
+                      _trendSection(s, surfaceVariant, textPrimary, textVariant, textMuted, primaryColor),
+                      const SizedBox(height: 16),
+                      if (isWide)
+                        _bandModeRow(s, surfaceVariant, textPrimary, textVariant, textMuted, primaryColor)
+                      else ...[_bandSection(s, surfaceVariant, textPrimary, textVariant, textMuted, primaryColor),
+                        const SizedBox(height: 16),
+                        _modeSection(s, surfaceVariant, textPrimary, textVariant, textMuted, primaryColor)],
+                      const SizedBox(height: 16),
+                      _hourSection(s, surfaceVariant, textPrimary, textVariant, textMuted, primaryColor),
+                      const SizedBox(height: 16),
+                      _topCallsSection(s, surfaceVariant, textPrimary, textVariant, primaryColor),
+                    ],
+                  ),
+                ),
+          loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          error: (e, _) => Center(child: Text('加载失败', style: TextStyle(color: AppColors.alertRed))),
+        ),
       ),
     );
   }
 
+  Widget _emptyStats(Color textVariant, Color textMuted) {
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.equalizer, size: 48, color: textMuted.withAlpha(102)),
+        const SizedBox(height: 8),
+        Text('暂无统计数据', style: TextStyle(color: textVariant, fontSize: 14 * typeScale(context))),
+        const SizedBox(height: 4),
+        Text('记录通联后即可查看统计图表',
+            style: TextStyle(color: textMuted.withAlpha(153), fontSize: 12 * typeScale(context))),
+      ]),
+    );
+  }
+
   // ==================== 总览 ====================
-  Widget _overviewSection(StatsData s, Color surfaceVariant, Color textPrimary,
-      Color textVariant) {
-    final overviewItems = <({String label, String value, IconData icon, Color color})>[
+  Widget _overviewSection(StatsData s, Color surfaceVariant, Color textPrimary, Color textVariant) {
+    final cols = overviewColumns(context);
+    final scale = typeScale(context);
+    final items = <({String label, String value, IconData icon, Color color})>[
       (label: '总通联', value: '${s.total}', icon: Icons.radio, color: colorForIndex(0)),
       (label: '独立呼号', value: '${s.distinctCalls}', icon: Icons.tag, color: colorForIndex(2)),
       (label: '活跃天数', value: '${s.activeDays}', icon: Icons.calendar_month, color: colorForIndex(5)),
@@ -322,35 +307,47 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           _sectionDot(AppColors.primary),
           const SizedBox(width: 8),
           Text('总览',
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary,
-                  letterSpacing: 1)),
+              style: TextStyle(fontSize: 14 * scale, fontWeight: FontWeight.w600, color: AppColors.primary, letterSpacing: 1)),
         ]),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: overviewItems.map((item) {
-            return SizedBox(
-              width: (MediaQuery.of(context).size.width - 42) / 2,
-              child: _overviewCard(item, surfaceVariant, textPrimary,
-                  textVariant),
-            );
-          }).toList(),
-        ),
+        _overviewGrid(items, cols, surfaceVariant, textPrimary, textVariant),
       ],
+    );
+  }
+
+  Widget _overviewGrid(
+      List<({String label, String value, IconData icon, Color color})> items,
+      int cols, Color surfaceVariant, Color textPrimary, Color textVariant) {
+    final rows = (items.length + cols - 1) ~/ cols;
+    return Column(
+      children: List.generate(rows, (row) {
+        return Padding(
+          padding: EdgeInsets.only(bottom: row < rows - 1 ? 10 : 0),
+          child: Row(
+            children: List.generate(cols, (col) {
+              final idx = row * cols + col;
+              if (idx < items.length) {
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(left: col > 0 ? 10 : 0),
+                    child: _overviewCard(items[idx], surfaceVariant, textPrimary, textVariant),
+                  ),
+                );
+              }
+              return const Expanded(child: SizedBox.shrink());
+            }),
+          ),
+        );
+      }),
     );
   }
 
   Widget _overviewCard(
       ({String label, String value, IconData icon, Color color}) item,
-      Color surfaceVariant,
-      Color textPrimary,
-      Color textVariant) {
+      Color surfaceVariant, Color textPrimary, Color textVariant) {
+    final scale = typeScale(context);
     return Card(
-      color: surfaceVariant.withValues(alpha: 0.45),
+      color: surfaceVariant.withAlpha(114),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
@@ -360,28 +357,20 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
           children: [
             Row(children: [
               Container(
-                  width: 22,
-                  height: 22,
+                  width: 22, height: 22,
                   decoration: BoxDecoration(
-                      color: item.color.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(6)),
+                      color: item.color.withAlpha(45), borderRadius: BorderRadius.circular(6)),
                   alignment: Alignment.center,
-                  child:
-                      Icon(item.icon, size: 13, color: item.color)),
+                  child: Icon(item.icon, size: 13, color: item.color)),
               const SizedBox(width: 6),
               Text(item.label,
-                  style: TextStyle(
-                      fontSize: 10, color: textVariant),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
+                  style: TextStyle(fontSize: 10 * scale, color: textVariant),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
             ]),
             const SizedBox(height: 4),
             Text(item.value,
                 style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                    color: textPrimary)),
+                    fontSize: 20 * scale, fontWeight: FontWeight.bold, fontFamily: 'monospace', color: textPrimary)),
           ],
         ),
       ),
@@ -392,106 +381,332 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
   Widget _trendSection(StatsData s, Color surfaceVariant, Color textPrimary,
       Color textVariant, Color textMuted, Color primaryColor) {
     final trendData = _getTrend(s.allContacts);
-    final peak =
-        trendData.fold<int>(0, (m, p) => p.value > m ? p.value : m);
+    final peak = trendData.fold<int>(0, (m, p) => p.value > m ? p.value : m);
+    final scale = typeScale(context);
 
     return Card(
-      color: surfaceVariant.withValues(alpha: 0.35),
+      color: surfaceVariant.withAlpha(89),
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Row(children: [
-              _sectionDot(primaryColor),
-              const SizedBox(width: 8),
-              Text('通联趋势',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor,
-                      letterSpacing: 1)),
-              const Spacer(),
-              if (peak > 0)
-                Text('峰值 $peak',
-                    style: TextStyle(fontSize: 10, color: textVariant)),
-            ]),
-            const SizedBox(height: 10),
-            // 粒度选择
-            _segmentedChips<Granularity>(
-              items: Granularity.values,
-              selected: _granularity,
-              label: (g) => g.label,
-              onSelect: (g) => setState(() { _granularity = g; _cachedTrend = null; }),
-              primaryColor: primaryColor,
-              surfaceColor: surfaceVariant,
-              textVariant: textVariant,
-            ),
-            const SizedBox(height: 8),
-            // 范围选择
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: TrendRange.values.map((r) {
-                final sel = r == _range;
-                return GestureDetector(
-                  onTap: () => setState(() { _range = r; _cachedTrend = null; }),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: sel
-                          ? primaryColor
-                          : surfaceVariant.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(50),
-                      border: sel
-                          ? null
-                          : Border.all(
-                              color: textMuted.withValues(alpha: 0.3),
-                              width: 1),
-                    ),
-                    child: Text(r.label,
-                        style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
-                            color: sel ? Colors.white : textVariant)),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            // 图表
-            if (trendData.isEmpty)
-              const _EmptySectionHint()
-            else if (_granularity == Granularity.daily && _range == TrendRange.days7)
-              TrendBarChart(
-                points: trendData,
-                barColor: primaryColor,
-                axisColor: textMuted.withValues(alpha: 0.3),
-              )
-            else
-              TrendLineChart(
-                points: trendData,
-                lineColor: primaryColor,
-                fillColor: primaryColor.withValues(alpha: 0.18),
-                axisColor: textMuted.withValues(alpha: 0.3),
-              ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _sectionDot(primaryColor),
+            const SizedBox(width: 8),
+            Text('通联趋势',
+                style: TextStyle(fontSize: 14 * scale, fontWeight: FontWeight.w600, color: primaryColor, letterSpacing: 1)),
+            const Spacer(),
+            if (peak > 0)
+              Text('峰值 $peak', style: TextStyle(fontSize: 10 * scale, color: textVariant)),
           ]),
+          const SizedBox(height: 10),
+          _segmentedChips<Granularity>(
+            items: Granularity.values,
+            selected: _granularity,
+            label: (g) => g.label,
+            onSelect: (g) => setState(() { _granularity = g; _cachedTrend = null; }),
+            primaryColor: primaryColor,
+            surfaceColor: surfaceVariant,
+            textVariant: textVariant,
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6, runSpacing: 6,
+            children: TrendRange.values.map((r) {
+              final sel = r == _range;
+              return GestureDetector(
+                onTap: () => setState(() { _range = r; _cachedTrend = null; }),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: sel ? primaryColor : surfaceVariant.withAlpha(127),
+                    borderRadius: BorderRadius.circular(50),
+                    border: sel ? null : Border.all(color: textMuted.withAlpha(76), width: 1),
+                  ),
+                  child: Text(r.label,
+                      style: TextStyle(
+                          fontSize: 10 * scale,
+                          fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
+                          color: sel ? Colors.white : textVariant)),
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 12),
+          if (trendData.isEmpty)
+            const _EmptySectionHint()
+          else
+            SizedBox(
+              height: chartHeight(context),
+              child: (_granularity == Granularity.daily && _range == TrendRange.days7)
+                  ? TrendBarChart(points: trendData, barColor: primaryColor, axisColor: textMuted.withAlpha(76))
+                  : TrendLineChart(points: trendData, lineColor: primaryColor,
+                      fillColor: primaryColor.withAlpha(45), axisColor: textMuted.withAlpha(76)),
+            ),
+        ]),
       ),
     );
   }
 
-  List<({String key, String label, int value})> _buildTrend(
-      List<ContactRecord> contacts) {
-    if (contacts.isEmpty) return [];
+  // ==================== 波段+模式并排 (宽屏) ====================
+  Widget _bandModeRow(StatsData s, Color surfaceVariant, Color textPrimary,
+      Color textVariant, Color textMuted, Color primaryColor) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(flex: 105, child: _bandSection(s, surfaceVariant, textPrimary, textVariant, textMuted, primaryColor)),
+        const SizedBox(width: 16),
+        Expanded(flex: 95, child: _modeSection(s, surfaceVariant, textPrimary, textVariant, textMuted, primaryColor)),
+      ],
+    );
+  }
 
+  // ==================== 波段分布 ====================
+  Widget _bandSection(StatsData s, Color surfaceVariant, Color textPrimary,
+      Color textVariant, Color textMuted, Color primaryColor) {
+    final scale = typeScale(context);
+    final isWide = isWideScreen(context);
+    return Card(
+      color: surfaceVariant.withAlpha(89),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _sectionDot(primaryColor),
+            const SizedBox(width: 8),
+            Text('波段分布',
+                style: TextStyle(fontSize: 14 * scale, fontWeight: FontWeight.w600, color: primaryColor, letterSpacing: 1)),
+            const Spacer(),
+            Text('${s.bands.length} 个波段', style: TextStyle(fontSize: 10 * scale, color: textVariant)),
+          ]),
+          const SizedBox(height: 10),
+          if (s.bands.isEmpty)
+            const _EmptySectionHint()
+          else if (isWide)
+            ..._bandWideContent(s, textPrimary, textVariant, textMuted)
+          else
+            ..._bandNarrowContent(s, textPrimary, textVariant, textMuted),
+        ]),
+      ),
+    );
+  }
+
+  List<Widget> _bandWideContent(StatsData s, Color textPrimary, Color textVariant, Color textMuted) {
+    return [
+      Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        const SizedBox(width: 16),
+        SizedBox(
+            width: 140, height: 140,
+            child: DonutChart(
+              items: s.bands,
+              centerTitle: '总通联',
+              centerValue: '${s.total}',
+              centerColor: textPrimary,
+              centerVariant: textVariant,
+              trackColor: textMuted.withAlpha(51),
+            )),
+        const SizedBox(width: 12),
+        Expanded(
+          child: HorizontalBarList(
+            items: s.bands, total: s.total,
+            textColor: textPrimary, textVariant: textVariant, trackColor: textMuted.withAlpha(51),
+          ),
+        ),
+      ]),
+    ];
+  }
+
+  List<Widget> _bandNarrowContent(StatsData s, Color textPrimary, Color textVariant, Color textMuted) {
+    return [
+      SizedBox(
+          height: 160,
+          child: DonutChart(
+            items: s.bands,
+            centerTitle: '总通联',
+            centerValue: '${s.total}',
+            centerColor: textPrimary,
+            centerVariant: textVariant,
+            trackColor: textMuted.withAlpha(51),
+          )),
+      const SizedBox(height: 8),
+      HorizontalBarList(
+        items: s.bands, total: s.total,
+        textColor: textPrimary, textVariant: textVariant, trackColor: textMuted.withAlpha(51),
+      ),
+    ];
+  }
+
+  // ==================== 模式分布 ====================
+  Widget _modeSection(StatsData s, Color surfaceVariant, Color textPrimary,
+      Color textVariant, Color textMuted, Color primaryColor) {
+    final scale = typeScale(context);
+    return Card(
+      color: surfaceVariant.withAlpha(89),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _sectionDot(primaryColor),
+            const SizedBox(width: 8),
+            Text('模式分布',
+                style: TextStyle(fontSize: 14 * scale, fontWeight: FontWeight.w600, color: primaryColor, letterSpacing: 1)),
+            const Spacer(),
+            Text('${s.modes.length} 种模式', style: TextStyle(fontSize: 10 * scale, color: textVariant)),
+          ]),
+          const SizedBox(height: 10),
+          if (s.modes.isEmpty)
+            const _EmptySectionHint()
+          else
+            HorizontalBarList(
+              items: s.modes, total: s.total,
+              textColor: textPrimary, textVariant: textVariant, trackColor: textMuted.withAlpha(51),
+            ),
+        ]),
+      ),
+    );
+  }
+
+  // ==================== 活跃时段 ====================
+  Widget _hourSection(StatsData s, Color surfaceVariant, Color textPrimary,
+      Color textVariant, Color textMuted, Color primaryColor) {
+    final scale = typeScale(context);
+    var peakHour = 0;
+    var peakVal = 0;
+    for (final h in s.hours) {
+      if (h.count > peakVal) { peakVal = h.count; peakHour = h.hour; }
+    }
+    return Card(
+      color: surfaceVariant.withAlpha(89),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _sectionDot(primaryColor),
+            const SizedBox(width: 8),
+            Text('活跃时段',
+                style: TextStyle(fontSize: 14 * scale, fontWeight: FontWeight.w600, color: primaryColor, letterSpacing: 1)),
+            const Spacer(),
+            if (peakVal > 0)
+              Text('高峰 $peakHour:00', style: TextStyle(fontSize: 10 * scale, color: textVariant)),
+          ]),
+          const SizedBox(height: 4),
+          Text('小时分布（基于通联创建时间）',
+              style: TextStyle(fontSize: 10 * scale, color: textMuted.withAlpha(153))),
+          const SizedBox(height: 8),
+          HourHeatStrip(
+            hours: s.hours,
+            baseColor: primaryColor,
+            textColor: textPrimary,
+            textVariant: textVariant,
+            emptyColor: textMuted.withAlpha(38),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  // ==================== 活跃呼号 Top 10 ====================
+  Widget _topCallsSection(StatsData s, Color surfaceVariant, Color textPrimary,
+      Color textVariant, Color primaryColor) {
+    final scale = typeScale(context);
+    return Card(
+      color: surfaceVariant.withAlpha(89),
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _sectionDot(primaryColor),
+            const SizedBox(width: 8),
+            Text('活跃呼号 Top ${s.topCalls.length}',
+                style: TextStyle(fontSize: 14 * scale, fontWeight: FontWeight.w600, color: primaryColor, letterSpacing: 1)),
+          ]),
+          const SizedBox(height: 8),
+          if (s.topCalls.isEmpty)
+            const _EmptySectionHint()
+          else
+            ...s.topCalls.asMap().entries.map((e) {
+              final rank = e.key + 1;
+              final c = e.value;
+              final maxCnt = s.topCalls.first.count;
+              final pct = c.count / maxCnt;
+              Color rankColor;
+              if (rank == 1) {
+                rankColor = const Color(0x3300BCD4);
+              } else if (rank == 2) {
+                rankColor = primaryColor.withAlpha(38);
+              } else if (rank == 3) {
+                rankColor = const Color(0xFF4CAF50).withAlpha(45);
+              } else {
+                rankColor = surfaceVariant.withAlpha(127);
+              }
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  Container(
+                      width: 22, height: 22,
+                      decoration: BoxDecoration(color: rankColor, borderRadius: BorderRadius.circular(4)),
+                      alignment: Alignment.center,
+                      child: Text('$rank',
+                          style: TextStyle(fontSize: 10 * scale, fontWeight: FontWeight.w600, color: textPrimary))),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Expanded(
+                          child: Text(c.callsign,
+                              style: TextStyle(
+                                  fontSize: 12 * scale,
+                                  fontWeight: FontWeight.w600,
+                                  fontFamily: 'monospace',
+                                  color: textPrimary),
+                              maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                        Text('${c.count} 次',
+                            style: TextStyle(fontSize: 10 * scale, fontFamily: 'monospace', color: textVariant)),
+                      ]),
+                      const SizedBox(height: 3),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(2),
+                        child: LinearProgressIndicator(
+                          value: pct, minHeight: 4,
+                          backgroundColor: textVariant.withAlpha(38),
+                          valueColor: AlwaysStoppedAnimation(primaryColor.withAlpha(178)),
+                        ),
+                      ),
+                      if (c.lastBand.isNotEmpty || c.lastMode.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 3),
+                          child: Row(children: [
+                            if (c.lastBand.isNotEmpty) _miniTag(c.lastBand, surfaceVariant, textVariant),
+                            if (c.lastBand.isNotEmpty && c.lastMode.isNotEmpty) const SizedBox(width: 4),
+                            if (c.lastMode.isNotEmpty) _miniTag(c.lastMode, surfaceVariant, textVariant),
+                          ]),
+                        ),
+                    ]),
+                  ),
+                ]),
+              );
+            }),
+        ]),
+      ),
+    );
+  }
+
+  List<({String key, String label, int value})> _buildTrend(List<ContactRecord> contacts) {
+    if (contacts.isEmpty) return [];
     final now = DateTime.now();
     final cutoff = now.subtract(Duration(days: _range.days));
     final cutoffMs = cutoff.millisecondsSinceEpoch;
-    final filtered =
-        contacts.where((c) => c.createdAt >= cutoffMs).toList();
+    final filtered = contacts.where((c) => c.createdAt >= cutoffMs).toList();
     if (filtered.isEmpty) return [];
 
     switch (_granularity) {
@@ -499,8 +714,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         final byDay = <DateTime, int>{};
         DateTime? firstDay, lastDay;
         for (final c in filtered) {
-          final d =
-              DateTime.fromMillisecondsSinceEpoch(c.createdAt);
+          final d = DateTime.fromMillisecondsSinceEpoch(c.createdAt);
           final day = DateTime(d.year, d.month, d.day);
           byDay[day] = (byDay[day] ?? 0) + 1;
           if (firstDay == null || day.isBefore(firstDay)) firstDay = day;
@@ -511,11 +725,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         var d = firstDay;
         while (!d.isAfter(lastDay)) {
           final cnt = byDay[d] ?? 0;
-          result.add((
-            key: d.toIso8601String(),
-            label: '${d.month}/${d.day}',
-            value: cnt
-          ));
+          result.add((key: d.toIso8601String(), label: '${d.month}/${d.day}', value: cnt));
           d = d.add(const Duration(days: 1));
         }
         return result;
@@ -525,18 +735,14 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         final labels = <String, String>{};
         for (final c in filtered) {
           final d = DateTime.fromMillisecondsSinceEpoch(c.createdAt);
-          // 简单按周分组：用年份+周数
           final jan1 = DateTime(d.year, 1, 1);
           final weekNum = ((d.difference(jan1).inDays + jan1.weekday - 1) / 7).floor() + 1;
           final key = '${d.year}-W${weekNum.toString().padLeft(2, '0')}';
           byWeek[key] = (byWeek[key] ?? 0) + 1;
-          if (!labels.containsKey(key)) {
-            labels[key] = '${d.month}/${d.day}';
-          }
+          if (!labels.containsKey(key)) labels[key] = '${d.month}/${d.day}';
         }
         return byWeek.entries
-            .map((e) =>
-                (key: e.key, label: labels[e.key] ?? e.key, value: e.value))
+            .map((e) => (key: e.key, label: labels[e.key] ?? e.key, value: e.value))
             .toList()
           ..sort((a, b) => a.key.compareTo(b.key));
 
@@ -545,34 +751,24 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
         final labels = <String, String>{};
         for (final c in filtered) {
           final d = DateTime.fromMillisecondsSinceEpoch(c.createdAt);
-          final key =
-              '${d.year}-${d.month.toString().padLeft(2, '0')}';
+          final key = '${d.year}-${d.month.toString().padLeft(2, '0')}';
           byMonth[key] = (byMonth[key] ?? 0) + 1;
-          if (!labels.containsKey(key)) {
-            labels[key] = '${d.year}年${d.month}月';
-          }
+          if (!labels.containsKey(key)) labels[key] = '${d.year}年${d.month}月';
         }
         return byMonth.entries
-            .map((e) =>
-                (key: e.key, label: labels[e.key] ?? e.key, value: e.value))
+            .map((e) => (key: e.key, label: labels[e.key] ?? e.key, value: e.value))
             .toList()
           ..sort((a, b) => a.key.compareTo(b.key));
     }
   }
 
   Widget _segmentedChips<T>({
-    required List<T> items,
-    required T selected,
-    required String Function(T) label,
-    required void Function(T) onSelect,
-    required Color primaryColor,
-    required Color surfaceColor,
-    required Color textVariant,
+    required List<T> items, required T selected,
+    required String Function(T) label, required void Function(T) onSelect,
+    required Color primaryColor, required Color surfaceColor, required Color textVariant,
   }) {
     return Container(
-      decoration: BoxDecoration(
-          color: surfaceColor.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: surfaceColor.withAlpha(153), borderRadius: BorderRadius.circular(8)),
       padding: const EdgeInsets.all(2),
       child: Row(
         children: items.map((item) {
@@ -583,14 +779,12 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 decoration: BoxDecoration(
-                    color: sel ? primaryColor : Colors.transparent,
-                    borderRadius: BorderRadius.circular(6)),
+                    color: sel ? primaryColor : Colors.transparent, borderRadius: BorderRadius.circular(6)),
                 alignment: Alignment.center,
                 child: Text(label(item),
                     style: TextStyle(
                         fontSize: 10,
-                        fontWeight:
-                            sel ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: sel ? FontWeight.w600 : FontWeight.normal,
                         color: sel ? Colors.white : textVariant),
                     maxLines: 1),
               ),
@@ -601,282 +795,17 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     );
   }
 
-  // ==================== 波段分布 ====================
-  Widget _bandSection(StatsData s, Color surfaceVariant, Color textPrimary,
-      Color textVariant, Color textMuted, Color primaryColor) {
-    return Card(
-      color: surfaceVariant.withValues(alpha: 0.35),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Row(children: [
-              _sectionDot(primaryColor),
-              const SizedBox(width: 8),
-              Text('波段分布',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor,
-                      letterSpacing: 1)),
-              const Spacer(),
-              Text('${s.bands.length} 个波段',
-                  style: TextStyle(fontSize: 10, color: textVariant)),
-            ]),
-            const SizedBox(height: 10),
-            if (s.bands.isEmpty)
-              const _EmptySectionHint()
-            else ..._bandContent(s, textPrimary, textVariant, textMuted),
-          ]),
-      ),
-    );
-  }
-
-  List<Widget> _bandContent(StatsData s, Color textPrimary, Color textVariant, Color textMuted) {
-    return [
-      SizedBox(
-          height: 160,
-          child: DonutChart(
-            items: s.bands,
-            centerTitle: '总通联',
-            centerValue: '${s.total}',
-            centerColor: textPrimary,
-            centerVariant: textVariant,
-            trackColor: textMuted.withValues(alpha: 0.2),
-          )),
-      const SizedBox(height: 8),
-      HorizontalBarList(
-        items: s.bands,
-        total: s.total,
-        textColor: textPrimary,
-        textVariant: textVariant,
-        trackColor: textMuted.withValues(alpha: 0.2),
-      ),
-    ];
-  }
-
-  // ==================== 模式分布 ====================
-  Widget _modeSection(StatsData s, Color surfaceVariant, Color textPrimary,
-      Color textVariant, Color textMuted, Color primaryColor) {
-    return Card(
-      color: surfaceVariant.withValues(alpha: 0.35),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Row(children: [
-              _sectionDot(primaryColor),
-              const SizedBox(width: 8),
-              Text('模式分布',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor,
-                      letterSpacing: 1)),
-              const Spacer(),
-              Text('${s.modes.length} 种模式',
-                  style: TextStyle(fontSize: 10, color: textVariant)),
-            ]),
-            const SizedBox(height: 10),
-            if (s.modes.isEmpty)
-              const _EmptySectionHint()
-            else
-              HorizontalBarList(
-                items: s.modes,
-                total: s.total,
-                textColor: textPrimary,
-                textVariant: textVariant,
-                trackColor: textMuted.withValues(alpha: 0.2),
-              ),
-          ]),
-      ),
-    );
-  }
-
-  // ==================== 活跃时段 ====================
-  Widget _hourSection(StatsData s, Color surfaceVariant, Color textPrimary,
-      Color textVariant, Color textMuted, Color primaryColor) {
-    final peak = s.hours.fold<(int, int)?>(null, (prev, h) {
-      if (prev == null || h.count > prev.$2) return (h.hour, h.count);
-      return prev;
-    });
-    return Card(
-      color: surfaceVariant.withValues(alpha: 0.35),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Row(children: [
-              _sectionDot(primaryColor),
-              const SizedBox(width: 8),
-              Text('活跃时段',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor,
-                      letterSpacing: 1)),
-              const Spacer(),
-              if (peak != null && peak.$2 > 0)
-                Text('高峰 ${peak.$1}:00',
-                    style: TextStyle(fontSize: 10, color: textVariant)),
-            ]),
-            const SizedBox(height: 4),
-            Text('小时分布（基于通联创建时间）',
-                style: TextStyle(
-                    fontSize: 10,
-                    color: textMuted.withValues(alpha: 0.6))),
-            const SizedBox(height: 8),
-            HourHeatStrip(
-              hours: s.hours,
-              baseColor: primaryColor,
-              textColor: textPrimary,
-              textVariant: textVariant,
-              emptyColor: textMuted.withValues(alpha: 0.15),
-            ),
-          ]),
-      ),
-    );
-  }
-
-  // ==================== 活跃呼号 Top 10 ====================
-  Widget _topCallsSection(StatsData s, Color surfaceVariant, Color textPrimary,
-      Color textVariant, Color primaryColor) {
-    return Card(
-      color: surfaceVariant.withValues(alpha: 0.35),
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-            Row(children: [
-              _sectionDot(primaryColor),
-              const SizedBox(width: 8),
-              Text('活跃呼号 Top ${s.topCalls.length}',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: primaryColor,
-                      letterSpacing: 1)),
-            ]),
-            const SizedBox(height: 8),
-            if (s.topCalls.isEmpty)
-              const _EmptySectionHint()
-            else
-              ...s.topCalls.asMap().entries.map((e) {
-                final rank = e.key + 1;
-                final c = e.value;
-                final maxCnt = s.topCalls.first.count;
-                final pct = c.count / maxCnt;
-                final rankColor = rank == 1
-                    ? const Color(0x3300BCD4)
-                    : rank == 2
-                        ? primaryColor.withValues(alpha: 0.15)
-                        : rank == 3
-                            ? const Color(0xFF4CAF50).withValues(alpha: 0.18)
-                            : surfaceVariant.withValues(alpha: 0.5);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                      Container(
-                          width: 22,
-                          height: 22,
-                          decoration: BoxDecoration(
-                              color: rankColor,
-                              borderRadius: BorderRadius.circular(4)),
-                          alignment: Alignment.center,
-                          child: Text('$rank',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                  color: textPrimary))),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                            Row(children: [
-                              Expanded(
-                                child: Text(c.callsign,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        fontFamily: 'monospace',
-                                        color: textPrimary),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis),
-                              ),
-                              Text('${c.count} 次',
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      fontFamily: 'monospace',
-                                      color: textVariant)),
-                            ]),
-                            const SizedBox(height: 3),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(2),
-                              child: LinearProgressIndicator(
-                                value: pct,
-                                minHeight: 4,
-                                backgroundColor:
-                                    textVariant.withValues(alpha: 0.15),
-                                valueColor: AlwaysStoppedAnimation(
-                                    primaryColor.withValues(alpha: 0.7)),
-                              ),
-                            ),
-                            if (c.lastBand.isNotEmpty ||
-                                c.lastMode.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 3),
-                                child: Row(children: [
-                                  if (c.lastBand.isNotEmpty)
-                                    _miniTag(c.lastBand, surfaceVariant,
-                                        textVariant),
-                                  if (c.lastBand.isNotEmpty &&
-                                      c.lastMode.isNotEmpty)
-                                    const SizedBox(width: 4),
-                                  if (c.lastMode.isNotEmpty)
-                                    _miniTag(c.lastMode, surfaceVariant,
-                                        textVariant),
-                                ]),
-                              ),
-                          ]),
-                      ),
-                    ]),
-                );
-              }),
-          ]),
-      ),
-    );
+  Widget _sectionDot(Color color) {
+    return Container(width: 6, height: 6,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)));
   }
 
   Widget _miniTag(String text, Color surfaceVariant, Color textVariant) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
-          color: surfaceVariant.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(3)),
-      child: Text(text,
-          style: TextStyle(fontSize: 9, color: textVariant)),
+      decoration: BoxDecoration(color: surfaceVariant.withAlpha(153), borderRadius: BorderRadius.circular(3)),
+      child: Text(text, style: TextStyle(fontSize: 9, color: textVariant)),
     );
-  }
-
-  Widget _sectionDot(Color color) {
-    return Container(
-        width: 6, height: 6,
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)));
   }
 }
 
@@ -887,11 +816,10 @@ class _EmptySectionHint extends StatelessWidget {
     return Container(
       height: 40,
       decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.05),
+          color: Colors.white.withAlpha(12),
           borderRadius: BorderRadius.circular(8)),
       alignment: Alignment.center,
-      child: const Text('暂无数据',
-          style: TextStyle(fontSize: 12, color: Colors.grey)),
+      child: const Text('暂无数据', style: TextStyle(fontSize: 12, color: Colors.grey)),
     );
   }
 }
