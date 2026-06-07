@@ -1,7 +1,7 @@
-name: ham_logs
-description: "QSO Keeper - 业余无线电通联日志"
+﻿name: ham_logs
+description: "QSO Keeper - 涓氫綑鏃犵嚎鐢甸€氳仈鏃ュ織"
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ^3.10.4
