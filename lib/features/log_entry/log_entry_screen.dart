@@ -655,24 +655,26 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       hintText: '呼号 频率 模式',
       hintStyle: TextStyle(color: textMuted, fontSize: 13),
       filled: true, fillColor: isDark ? AppColors.surface : const Color(0xFFF5F3F4),
-      suffixIcon: Builder(builder: (_) {
-        final prov = CallSignUtils.getProvince(_smartInput.text.split(' ').first);
-        final inputParsed = SmartInputParser.parse(_smartInput.text);
-        final showReturn = inputParsed.frequencyMHz.isNotEmpty || inputParsed.mode.isNotEmpty;
-        if (prov == null && !showReturn) return const SizedBox.shrink();
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (prov != null)
-              Padding(
-                padding: const EdgeInsets.only(right: 2),
-                child: Text(prov, style: TextStyle(color: textMuted.withValues(alpha: 0.6), fontSize: 11)),
-              ),
-            if (showReturn)
-              IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: AppColors.primary), onPressed: _commitNext),
-          ],
-        );
-      }),
+      suffixIcon: ValueListenableBuilder<TextEditingValue>(
+        valueListenable: _smartInput,
+        builder: (ctx, val, _) {
+          final prov = CallSignUtils.getProvince(val.text.split(' ').first);
+          final inputParsed = SmartInputParser.parse(val.text);
+          final showReturn = inputParsed.frequencyMHz.isNotEmpty || inputParsed.mode.isNotEmpty;
+          if (prov == null && !showReturn) return const SizedBox.shrink();
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (prov != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 2),
+                  child: Text(prov, style: TextStyle(color: textMuted.withValues(alpha: 0.6), fontSize: 11)),
+                ),
+              if (showReturn)
+                IconButton(icon: Icon(Icons.keyboard_return, size: 20, color: AppColors.primary), onPressed: _commitNext),
+            ],
+          );
+        }),
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: border.withValues(alpha: 0.5))),
       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.amber, width: 1.5)),
