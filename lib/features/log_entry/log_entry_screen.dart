@@ -476,61 +476,65 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   }
 
   Widget _wideLayout(double bw, Color bgColor, Color surfaceColor, Color surfaceLightColor, Color textPrimary, Color textSecondary, Color textMuted, Color borderColor, bool isDark) {
-    return Row(children: [
-      SizedBox(
-        width: bw * 0.55,
-        child: Column(children: [
-          Expanded(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(14, 10, 14, 8),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                if (_showSuccess)
-                  Container(width: double.infinity, padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8), margin: EdgeInsets.only(bottom: 10),
-                    decoration: BoxDecoration(color: AppColors.scopeGreen.withAlpha(30), borderRadius: BorderRadius.circular(12)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.check, color: AppColors.scopeGreen, size: 18), SizedBox(width: 8),
-                      Text('保存成功', style: TextStyle(color: AppColors.scopeGreen, fontSize: 13, fontWeight: FontWeight.w600)),
-                    ])),
-                _buildInfoRow(surfaceColor, borderColor),
-                _buildSmartInput(textPrimary, textMuted, borderColor, isDark),
-                if (_showSuggestions && _suggestions.isNotEmpty) _buildSuggestions(surfaceColor, borderColor),
-                SizedBox(height: 14),
-                _buildRstRow(surfaceLightColor, borderColor, textPrimary, textSecondary),
-                SizedBox(height: 14),
-                _buildPowerRow(surfaceLightColor, borderColor, textPrimary, textSecondary),
-                SizedBox(height: 14),
-                _buildNotesField(textPrimary, textSecondary, borderColor, isDark),
-                SizedBox(height: 10),
-                if (_antennaList.isNotEmpty) ...[
-                  _chipSection('天线', _antennaList, _selectedAntenna, (v) { _selectedAntenna = v; setState(() {}); }, surfaceLightColor, borderColor, textSecondary),
+    final pad = MediaQuery.of(context).padding;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(pad.left, 0, pad.right, pad.bottom),
+      child: Row(children: [
+        SizedBox(
+          width: bw * 0.55,
+          child: Column(children: [
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(14, 10, 14, 8),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (_showSuccess)
+                    Container(width: double.infinity, padding: EdgeInsets.symmetric(horizontal: 14, vertical: 8), margin: EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(color: AppColors.scopeGreen.withAlpha(30), borderRadius: BorderRadius.circular(12)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.check, color: AppColors.scopeGreen, size: 18), SizedBox(width: 8),
+                        Text('保存成功', style: TextStyle(color: AppColors.scopeGreen, fontSize: 13, fontWeight: FontWeight.w600)),
+                      ])),
+                  _buildInfoRow(surfaceColor, borderColor),
+                  _buildSmartInput(textPrimary, textMuted, borderColor, isDark),
+                  if (_showSuggestions && _suggestions.isNotEmpty) _buildSuggestions(surfaceColor, borderColor),
+                  SizedBox(height: 14),
+                  _buildRstRow(surfaceLightColor, borderColor, textPrimary, textSecondary),
+                  SizedBox(height: 14),
+                  _buildPowerRow(surfaceLightColor, borderColor, textPrimary, textSecondary),
+                  SizedBox(height: 14),
+                  _buildNotesField(textPrimary, textSecondary, borderColor, isDark),
                   SizedBox(height: 10),
-                ],
-                if (_rigCategories.isNotEmpty) ...[
-                  _rigChipSection(surfaceLightColor, borderColor, textPrimary, textSecondary),
-                  SizedBox(height: 10),
-                ],
-              ]),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            child: SizedBox(width: double.infinity, child: ElevatedButton(
-              onPressed: _callsign.isNotEmpty ? _save : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary, foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                disabledBackgroundColor: AppColors.amber.withAlpha(89),
+                  if (_antennaList.isNotEmpty) ...[
+                    _chipSection('天线', _antennaList, _selectedAntenna, (v) { _selectedAntenna = v; setState(() {}); }, surfaceLightColor, borderColor, textSecondary),
+                    SizedBox(height: 10),
+                  ],
+                  if (_rigCategories.isNotEmpty) ...[
+                    _rigChipSection(surfaceLightColor, borderColor, textPrimary, textSecondary),
+                    SizedBox(height: 10),
+                  ],
+                ]),
               ),
-              child: Text('保存通联', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
-          )),
-        ]),
-      ),
-      VerticalDivider(width: 1, thickness: 1, color: borderColor.withAlpha(76)),
-      SizedBox(
-        width: bw * 0.45,
-        child: _buildContactList(surfaceColor, borderColor, textPrimary, textSecondary, textMuted, isDark),
-      ),
-    ]);
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              child: SizedBox(width: double.infinity, child: ElevatedButton(
+                onPressed: _callsign.isNotEmpty ? _save : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary, foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  disabledBackgroundColor: AppColors.amber.withAlpha(89),
+                ),
+                child: Text('保存通联', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+            )),
+          ]),
+        ),
+        VerticalDivider(width: 1, thickness: 1, color: borderColor.withAlpha(76)),
+        SizedBox(
+          width: bw * 0.45,
+          child: _buildContactList(surfaceColor, borderColor, textPrimary, textSecondary, textMuted, isDark),
+        ),
+      ]),
+    );
   }
 
   Widget _buildContactList(Color surfaceColor, Color borderColor, Color textPrimary, Color textSecondary, Color textMuted, bool isDark) {

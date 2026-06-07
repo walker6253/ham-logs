@@ -202,7 +202,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
                 data: (s) => s.total == 0
                   ? _emptyStats(textVariant, textMuted, layout)
                   : ListView(
-                      padding: EdgeInsets.fromLTRB(layout.hPad, 12, layout.hPad, 40),
+                      padding: EdgeInsets.fromLTRB(layout.hPad, 12, layout.hPad, 40 + MediaQuery.of(context).padding.bottom),
                       children: [
                         _overviewSection(s, surfaceVariant, textPrimary, textVariant, layout),
                         const SizedBox(height: 16),
