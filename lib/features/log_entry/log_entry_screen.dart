@@ -378,7 +378,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
           final bw = constraints.maxWidth;
           final bh = constraints.maxHeight;
           final wide = bw >= 840 || (bw > bh && bw >= 600);
-          final isTablet = bw >= 840;
+          final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
           if (wide) {
             return _wideLayout(contactsAsync, bgColor, surfaceColor, surfaceLightColor, textPrimary, textSecondary, textMuted, borderColor, isDark, isTablet ? 58 : 50, isTablet ? 42 : 50);
           }
