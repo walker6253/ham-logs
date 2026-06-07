@@ -379,7 +379,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
           final bh = constraints.maxHeight;
           final wide = bw >= 840 || (bw > bh && bw >= 600);
           if (wide) {
-            return _wideLayout(bw, contactsAsync, bgColor, surfaceColor, surfaceLightColor, textPrimary, textSecondary, textMuted, borderColor, isDark);
+            return _wideLayout(contactsAsync, bgColor, surfaceColor, surfaceLightColor, textPrimary, textSecondary, textMuted, borderColor, isDark);
           }
           return Column(children: [
         // ===== top: scrollable input form =====
@@ -475,13 +475,13 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
       );
   }
 
-  Widget _wideLayout(double bw, AsyncValue<List<ContactRecord>> contactsAsync, Color bgColor, Color surfaceColor, Color surfaceLightColor, Color textPrimary, Color textSecondary, Color textMuted, Color borderColor, bool isDark) {
+  Widget _wideLayout(AsyncValue<List<ContactRecord>> contactsAsync, Color bgColor, Color surfaceColor, Color surfaceLightColor, Color textPrimary, Color textSecondary, Color textMuted, Color borderColor, bool isDark) {
     final pad = MediaQuery.of(context).padding;
     return Padding(
       padding: EdgeInsets.fromLTRB(pad.left, 0, pad.right, pad.bottom),
       child: Row(children: [
-        SizedBox(
-          width: bw * 0.55,
+        Expanded(
+          flex: 55,
           child: Column(children: [
             Expanded(
               child: SingleChildScrollView(
@@ -528,10 +528,14 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
             )),
           ]),
         ),
-        VerticalDivider(width: 1, thickness: 1, color: borderColor.withAlpha(76)),
-        SizedBox(
-          width: bw * 0.45,
-          child: _buildContactList(contactsAsync, surfaceColor, borderColor, textPrimary, textSecondary, textMuted, isDark),
+        Expanded(
+          flex: 45,
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: borderColor.withAlpha(76), width: 1)),
+            ),
+            child: _buildContactList(contactsAsync, surfaceColor, borderColor, textPrimary, textSecondary, textMuted, isDark),
+          ),
         ),
       ]),
     );
