@@ -478,7 +478,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   Widget _wideLayout(AsyncValue<List<ContactRecord>> contactsAsync, Color bgColor, Color surfaceColor, Color surfaceLightColor, Color textPrimary, Color textSecondary, Color textMuted, Color borderColor, bool isDark) {
     final pad = MediaQuery.of(context).padding;
     return Padding(
-      padding: EdgeInsets.fromLTRB(pad.left, 0, pad.right, pad.bottom),
+      padding: EdgeInsets.fromLTRB(pad.left, 0, pad.right, pad.left > pad.right ? pad.left : pad.right),
       child: Row(children: [
         Expanded(
           flex: 55,
