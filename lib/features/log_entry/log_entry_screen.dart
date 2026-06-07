@@ -859,9 +859,8 @@ Row(children: [
               ]),
               if (c.frequencyMHz > 0 || c.rstSent.isNotEmpty || c.rstReceived.isNotEmpty) ...[
                 const SizedBox(height: 5),
-                Row(children: [
+                Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 2, children: [
                   if (c.frequencyMHz > 0) Text('${c.frequencyMHz} MHz', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12, fontFamily: 'monospace', color: textPrimary)),
-                  const Spacer(),
                   if (c.rstSent.isNotEmpty) ...[
                     Text('Snt ', style: TextStyle(color: textSecondary, fontSize: 11)),
                     Text(c.rstSent, style: TextStyle(color: textPrimary, fontSize: 11, fontWeight: FontWeight.w600)),
@@ -878,7 +877,7 @@ Row(children: [
                   ],
                   if ((c.rstSent.isNotEmpty || c.rstReceived.isNotEmpty || c.powerTx.isNotEmpty) && c.powerRx.isNotEmpty) Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text('|', style: TextStyle(color: textMuted, fontSize: 11))),
                   if (c.powerRx.isNotEmpty) ...[
-                    Text('Rxp ', style: TextStyle(color: textSecondary, fontSize: 11)),
+                    Text(' Rxp ', style: TextStyle(color: textSecondary, fontSize: 11)),
                     Text(c.powerRx, style: TextStyle(color: textPrimary, fontSize: 11, fontWeight: FontWeight.w600)),
                   ],
                 ]),
