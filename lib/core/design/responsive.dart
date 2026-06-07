@@ -2,24 +2,18 @@ import 'package:flutter/material.dart';
 
 enum WidthClass { compact, medium, expanded }
 
+/// 横屏手机视为大屏
+bool _effectiveExpanded(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  final wc = widthClassOf(context);
+  return wc == WidthClass.expanded || (size.width > size.height && wc == WidthClass.medium);
+}
+
 WidthClass widthClassOf(BuildContext context) {
   final w = MediaQuery.of(context).size.width;
-  final h = MediaQuery.of(context).size.height;
-  final isLandscape = w > h;
-  final shortestSide = w < h ? w : h;
-  final isPhoneLandscape = isLandscape && shortestSide < 600;
-  WidthClass cls;
-  if (w < 600) {
-    cls = WidthClass.compact;
-  } else if (w < 840) {
-    cls = WidthClass.medium;
-  } else {
-    cls = WidthClass.expanded;
-  }
-  if (isPhoneLandscape && cls != WidthClass.expanded) {
-    return WidthClass.expanded;
-  }
-  return cls;
+  if (w < 600) return WidthClass.compact;
+  if (w < 840) return WidthClass.medium;
+  return WidthClass.expanded;
 }
 
 double responsiveHPadding(BuildContext context) {
@@ -31,25 +25,24 @@ double responsiveHPadding(BuildContext context) {
 }
 
 double statsHPadding(BuildContext context) {
-  return switch (widthClassOf(context)) {
-    WidthClass.expanded => 40,
-    WidthClass.medium => 24,
-    WidthClass.compact => 16,
-  };
+  return _effectiveExpanded(context) ? 40 : 16;
 }
 
-bool isWideScreen(BuildContext context) =>
-    widthClassOf(context) != WidthClass.compact;
+bool isWideScreen(BuildContext context) {
+  final size = MediaQuery.of(context).size;
+  return size.width > size.height || widthClassOf(context) != WidthClass.compact;
+}
 
 double? contentMaxWidth(BuildContext context) {
-  return widthClassOf(context) == WidthClass.expanded ? 1080.0 : null;
+  return _effectiveExpanded(context) ? 1080.0 : null;
 }
 
 int overviewColumns(BuildContext context) {
+  if (_effectiveExpanded(context)) return 6;
   return switch (widthClassOf(context)) {
-    WidthClass.expanded => 6,
     WidthClass.medium => 4,
     WidthClass.compact => 2,
+    WidthClass.expanded => 6,
   };
 }
 
@@ -57,13 +50,9 @@ double chartHeight(BuildContext context) {
   return widthClassOf(context) == WidthClass.compact ? 140.0 : 200.0;
 }
 
-bool useTwoColumns(BuildContext context) =>
-    widthClassOf(context) == WidthClass.expanded;
+bool useTwoColumns(BuildContext context) => _effectiveExpanded(context);
 
 double typeScale(BuildContext context) {
-  return switch (widthClassOf(context)) {
-    WidthClass.expanded => 1.1,
-    WidthClass.medium => 1.05,
-    WidthClass.compact => 1.0,
-  };
+  return _effectiveExpanded(context) ? 1.1
+      : widthClassOf(context) == WidthClass.medium ? 1.05 : 1.0;
 }
