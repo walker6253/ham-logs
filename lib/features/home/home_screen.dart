@@ -122,8 +122,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: OrientationBuilder(
         builder: (ctx, orientation) {
           final isLandscape = orientation == Orientation.landscape;
-          final hPad = isLandscape ? 48.0 : responsiveHPadding(context);
+          final wc = widthClassOf(context);
           final useGrid = isLandscape || useTwoColumns(context);
+
+          // cardSpacing: Compact=10, Medium=12, Expanded=14
+          final cardSpacing = isLandscape ? 14.0 : switch (wc) {
+            WidthClass.expanded => 14.0,
+            WidthClass.medium => 12.0,
+            WidthClass.compact => 10.0,
+          };
+          final hPad = isLandscape ? 48.0 : responsiveHPadding(context);
 
           return datesAsync.when(
             data: (dates) => dates.isEmpty
@@ -135,10 +143,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : useGrid
                 ? GridView.builder(
                     padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 88),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 320,
+                      crossAxisSpacing: cardSpacing,
+                      mainAxisSpacing: cardSpacing,
                       childAspectRatio: 3.5,
                     ),
                     itemCount: dates.length,
@@ -147,7 +155,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 : ListView.builder(
                     padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 88),
                     itemCount: dates.length,
-                    itemBuilder: (ctx, i) => _card(dates[i], i, surfaceColor, textPrimary, borderColor, accentColor, accentBgColor),
+                    itemBuilder: (ctx, i) => Padding(
+                      padding: EdgeInsets.only(bottom: cardSpacing),
+                      child: _card(dates[i], i, surfaceColor, textPrimary, borderColor, accentColor, accentBgColor),
+                    ),
                   ),
             loading: () => Center(child: CircularProgressIndicator(color: AppColors.amber)),
             error: (e, _) => Center(child: Text('\u52a0\u8f7d\u5931\u8d25', style: TextStyle(color: AppColors.alertRed))),
@@ -166,7 +177,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final dl = _fmt(d.label, d.isToday);
     return Card(
       color: sc,
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: bc.withAlpha(51))),
       elevation: 0,
       child: InkWell(
