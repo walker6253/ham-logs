@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -181,7 +181,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
     final ptxCtrl = TextEditingController(text: c.powerTx);
     final prxCtrl = TextEditingController(text: c.powerRx);
     final notesCtrl = TextEditingController(text: c.notes);
-    var editDate = DateTime.fromMillisecondsSinceEpoch(c.dateEpochDay * 86400000);
+    var editDate = DateTime.fromMillisecondsSinceEpoch(c.dateEpochDay * 86400000, isUtc: true);
     final editDt = TimezoneUtil.dateTimeFromEpoch(c.createdAt, AppPreferences.timezone);
     var editTime = TimeOfDay.fromDateTime(editDt);
     var editCreatedAt = c.createdAt;
@@ -264,7 +264,7 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
     if (result == true && context.mounted) {
       final db = ref.read(dbProvider);
       await db.contactDao.updateContact(ContactRecord(
-        id: c.id, dateEpochDay: editDate.millisecondsSinceEpoch ~/ 86400000, callsign: callsignCtrl.text.trim().toUpperCase(),
+        id: c.id, dateEpochDay: DateTime.utc(editDate.year, editDate.month, editDate.day).millisecondsSinceEpoch ~/ 86400000, callsign: callsignCtrl.text.trim().toUpperCase(),
         frequencyMHz: double.tryParse(freqCtrl.text) ?? c.frequencyMHz, mode: modeCtrl.text.trim(),
         rstSent: rsCtrl.text.trim(), rstReceived: rrCtrl.text.trim(),
         powerTx: ptxCtrl.text.trim(), powerRx: prxCtrl.text.trim(),
@@ -352,9 +352,9 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   @override
   Widget build(BuildContext context) {
     final contactsAsync = ref.watch(logEntryProvider(widget.dateEpochDay));
-    final dt = DateTime.fromMillisecondsSinceEpoch(widget.dateEpochDay * 86400000);
-    final today = DateTime.now();
-    final todayEpoch = today.millisecondsSinceEpoch ~/ 86400000;
+    final dt = DateTime.fromMillisecondsSinceEpoch(widget.dateEpochDay * 86400000, isUtc: true);
+    final todayUtc = DateTime.now().toUtc();
+    final todayEpoch = DateTime.utc(todayUtc.year, todayUtc.month, todayUtc.day).millisecondsSinceEpoch ~/ 86400000;
     final dateLabel = '${dt.year}年${dt.month}月${dt.day}日';
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
@@ -589,8 +589,8 @@ class _LogEntryScreenState extends ConsumerState<LogEntryScreen> {
   }
 
   Widget _buildContactList(AsyncValue<List<ContactRecord>> contactsAsync, Color surfaceColor, Color borderColor, Color textPrimary, Color textSecondary, Color textMuted, bool isDark) {
-    final today = DateTime.now();
-    final todayEpoch = today.millisecondsSinceEpoch ~/ 86400000;
+    final todayUtc = DateTime.now().toUtc();
+    final todayEpoch = DateTime.utc(todayUtc.year, todayUtc.month, todayUtc.day).millisecondsSinceEpoch ~/ 86400000;
     final title = _historicalContacts != null ? '历史  $_searchCallsign' : '今日通联';
     return Column(children: [
       Padding(padding: EdgeInsets.fromLTRB(14, 8, 14, 4), child: Row(children: [
@@ -1009,3 +1009,4 @@ class UpperCaseTextFormatter extends TextInputFormatter {
     return TextEditingValue(text: newValue.text.toUpperCase(), selection: newValue.selection);
   }
 }
+

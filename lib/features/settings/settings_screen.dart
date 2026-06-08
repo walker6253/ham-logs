@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
@@ -146,6 +146,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _loadPrefs();
     ref.read(homeRefreshNotifier.notifier).state++;
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('导入完成：$imported / ${records.length} 条'), backgroundColor: AppColors.primary));
+  }
+
+  Future<void> _clearAllContacts() async {
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: Text('确认清空'),
+      content: Text('将删除所有通联记录，此操作不可撤销。\n建议先导出 ADIF 备份。'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('取消')),
+        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('确认清空', style: TextStyle(color: AppColors.alertRed))),
+      ],
+    ));
+    if (confirmed == true) {
+      await ref.read(dbProvider).contactDao.deleteAllContacts();
+      _loadPrefs();
+      ref.read(homeRefreshNotifier.notifier).state++;
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('已清空所有通联记录')));
+    }
   }
 
   Future<void> _syncCloudlog() async {
@@ -497,6 +514,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Expanded(child: ElevatedButton.icon(onPressed: _exportAdif, icon: Icon(Icons.file_upload), label: Text('导出 ADIF'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white))),
           const SizedBox(width: 8),
           Expanded(child: ElevatedButton.icon(onPressed: _importAdif, icon: Icon(Icons.file_download), label: Text('导入 ADIF'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white))),
+        const SizedBox(height: 10),
+        Center(child: TextButton.icon(
+          onPressed: _clearAllContacts,
+          icon: Icon(Icons.delete_forever, size: 16, color: AppColors.alertRed.withValues(alpha: 0.7)),
+          label: Text('清空所有通联记录', style: TextStyle(color: AppColors.alertRed.withValues(alpha: 0.7), fontSize: 12)),
+        )),
         ]),
         const SizedBox(height: 20),
         _sectionTitle('关于', icon: Icons.info_outline, titleColor: textPrimary),
