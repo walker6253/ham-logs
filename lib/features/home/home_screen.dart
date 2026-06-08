@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -16,7 +16,7 @@ final datesProvider = FutureProvider<List<({int date, String label, int count, b
   final today = DateTime.now();
   final todayEpoch = today.millisecondsSinceEpoch ~/ 86400000;
   return items.map((d) {
-    final dt = DateTime.fromMillisecondsSinceEpoch(d.dateEpochDay * 86400000);
+    final dt = DateTime.fromMillisecondsSinceEpoch(d.dateEpochDay * 86400000, isUtc: true);
     String label;
     if (d.dateEpochDay == todayEpoch) {
       label = '\u4eca\u5929';

@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+﻿import 'package:drift/drift.dart';
 import 'tables.dart';
 import 'app_database.dart';
 part 'contact_dao.g.dart';
@@ -90,9 +90,11 @@ class ContactDao extends DatabaseAccessor<AppDatabase> with _$ContactDaoMixin {
 
   Future<int> insertContact(ContactRecordsCompanion c) => into(contactRecords).insert(c);
   Future<int> deleteContact(int id) => (delete(contactRecords)..where((t) => t.id.equals(id))).go();
+  Future<int> deleteAllContacts() => delete(contactRecords).go();
   Future<bool> updateContact(ContactRecord c) => update(contactRecords).replace(c);
 }
 
 class DateCount { final int dateEpochDay; final int count; DateCount({required this.dateEpochDay, required this.count}); }
 class ModeCount { final String mode; final int count; ModeCount({required this.mode, required this.count}); }
 class LastContactInfo { final String callsign; final double frequencyMHz; final String mode; LastContactInfo({required this.callsign, required this.frequencyMHz, required this.mode}); }
+
