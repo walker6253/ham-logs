@@ -148,6 +148,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('导入完成：$imported / ${records.length} 条'), backgroundColor: AppColors.primary));
   }
 
+  Future<void> _resetRigs() async {
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: Text('重置设备'),
+      content: Text('将设备列表恢复为默认品牌和型号，当前自定义将被覆盖。'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('取消')),
+        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('确认重置', style: TextStyle(color: AppColors.alertRed))),
+      ],
+    ));
+    if (confirmed == true) {
+      await EquipmentManager.resetRigs();
+      final rigs = await EquipmentManager.getRigs();
+      setState(() { _rigList = rigs; });
+    }
+  }
+
   Future<void> _clearAllContacts() async {
     final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
       title: Text('确认清空'),
@@ -233,6 +249,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _antennaList.removeAt(idx);
     await EquipmentManager.setAntennas(_antennaList);
     setState(() {});
+  }
+
+  Future<void> _resetAntennas() async {
+    final confirmed = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(
+      title: Text('重置天线'),
+      content: Text('将天线列表恢复为默认选项，当前自定义将被覆盖。'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('取消')),
+        TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text('确认重置', style: TextStyle(color: AppColors.alertRed))),
+      ],
+    ));
+    if (confirmed == true) {
+      await EquipmentManager.resetAntennas();
+      final antennas = await EquipmentManager.getAntennas();
+      setState(() { _antennaList = antennas; });
+    }
   }
 
   Future<void> _addRig() async {
@@ -334,6 +366,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             style: TextStyle(fontSize: 12, color: textPrimary), onChanged: (v) => _newAntenna = v)),
           const SizedBox(width: 8),
           ElevatedButton(onPressed: _addAntenna, style: ElevatedButton.styleFrom(backgroundColor: isDark ? AppColors.primaryDark : AppColors.primary), child: Text('添加', style: TextStyle(fontSize: 11, color: Colors.white))),
+          TextButton(onPressed: _resetAntennas, child: Text('重置', style: TextStyle(fontSize: 11, color: AppColors.alertRed.withValues(alpha: 0.7)))),
         ]),
         const SizedBox(height: 16),
         _sectionTitle('设备管理', icon: Icons.build, titleColor: textPrimary),
@@ -425,6 +458,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             style: TextStyle(fontSize: 12, color: textPrimary), onChanged: (v) => _newRigModel = v)),
           const SizedBox(width: 8),
           ElevatedButton(onPressed: _addRig, style: ElevatedButton.styleFrom(backgroundColor: isDark ? AppColors.primaryDark : AppColors.primary), child: Text('添加', style: TextStyle(fontSize: 11, color: Colors.white))),
+          TextButton(onPressed: _resetRigs, child: Text('重置', style: TextStyle(fontSize: 11, color: AppColors.alertRed.withValues(alpha: 0.7)))),
         ]),
         const SizedBox(height: 16),
         _sectionTitle('Cloudlog 同步', icon: Icons.cloud, titleColor: textPrimary),
@@ -514,14 +548,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Expanded(child: ElevatedButton.icon(onPressed: _exportAdif, icon: Icon(Icons.file_upload), label: Text('导出 ADIF'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white))),
           const SizedBox(width: 8),
           Expanded(child: ElevatedButton.icon(onPressed: _importAdif, icon: Icon(Icons.file_download), label: Text('导入 ADIF'), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white))),
+        ]),
         const SizedBox(height: 10),
         Center(child: TextButton.icon(
           onPressed: _clearAllContacts,
           icon: Icon(Icons.delete_forever, size: 16, color: AppColors.alertRed.withValues(alpha: 0.7)),
           label: Text('清空所有通联记录', style: TextStyle(color: AppColors.alertRed.withValues(alpha: 0.7), fontSize: 12)),
-        )),
-        ]),
-        const SizedBox(height: 20),
+        )),const SizedBox(height: 20),
         _sectionTitle('关于', icon: Icons.info_outline, titleColor: textPrimary),
         const SizedBox(height: 8),
         TextButton(onPressed: () async { final info = await UpdateChecker.check(); if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(info.hasUpdate ? '有新版本 v${info.latestVersion}' : '已是最新版本 v${info.currentVersion}'))); },

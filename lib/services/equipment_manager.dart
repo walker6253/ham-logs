@@ -31,6 +31,11 @@ class EquipmentManager {
     }
   }
 
+  // 重置天线到默认选项
+  static Future<void> resetAntennas() async {
+    (await SharedPreferences.getInstance()).remove('antennas');
+  }
+
   static Future<List<EquipmentCategory>> getRigs() async {
     final p = await SharedPreferences.getInstance(); final json = p.getString('rigs');
     if (json == null) return List.from(_defaultRigs);
@@ -52,6 +57,11 @@ class EquipmentManager {
       list.insert(to, item);
       await setRigs(list);
     }
+  }
+
+  // 重置设备到默认选项
+  static Future<void> resetRigs() async {
+    (await SharedPreferences.getInstance()).remove('rigs');
   }
 
   static Future<void> removeAntenna(String item) async {

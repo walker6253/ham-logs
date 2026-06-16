@@ -4,8 +4,14 @@ import 'package:package_info_plus/package_info_plus.dart';
 class UpdateInfo { final bool hasUpdate; final String latestVersion; final String currentVersion; final String releaseUrl; final String body; const UpdateInfo({this.hasUpdate=false, this.latestVersion='', this.currentVersion='', this.releaseUrl='', this.body=''}); }
 
 class UpdateChecker {
-  static const _api = 'https://api.github.com/repos/walker6253/qso-keeper/releases/latest';
-  static final _dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 10), headers: {'Accept': 'application/vnd.github.v3+json'}));
+  static const _api = 'https://api.github.com/repos/walker6253/ham-logs/releases/latest';
+  static final _dio = Dio(BaseOptions(
+    connectTimeout: const Duration(seconds: 10),
+    headers: {
+      'Accept': 'application/vnd.github.v3+json',
+      'User-Agent': 'ham-logs-app',
+    },
+  ));
 
   static Future<UpdateInfo> check() async {
     try {
