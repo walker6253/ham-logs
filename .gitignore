@@ -1,4 +1,4 @@
-# Miscellaneous
+ï»¿# Miscellaneous
 *.class
 *.log
 *.pyc
@@ -44,5 +44,5 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-# APK ¹¹½¨²úÎï
+# APK æž„å»ºäº§ç‰©
 *.apk
